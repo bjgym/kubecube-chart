@@ -298,9 +298,9 @@ cloudshell:
 
 frontend:
   # frontend/deployment.yaml
+  # The image is global.images.frontend and the pull policy is fixed to
+  # IfNotPresent, as for every other component; neither is overridable here.
   replicas: 1
-  image: hub.c.163.com/kubecube/frontend:v1.1.0
-  imagePullPolicy: IfNotPresent
   resources: { }
     # If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
