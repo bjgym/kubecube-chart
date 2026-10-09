@@ -84,8 +84,8 @@ webhooks:
       {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
       service:
         name: kubecube
-        namespace: kubecube-system
-        port: 9443
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
         path: /validate-tenant-kubecube-io-v1-project
     failurePolicy: Fail
     name: vproject.kb.io
@@ -108,8 +108,8 @@ webhooks:
       {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
       service:
         name: kubecube
-        namespace: kubecube-system
-        port: 9443
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
         path: /validate-tenant-kubecube-io-v1-tenant
     failurePolicy: Fail
     name: vtenant.kb.io
