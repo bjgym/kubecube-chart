@@ -62,10 +62,14 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Allow the release namespace to be overridden for multi-namespace deployments in combined charts
+Allow the release namespace to be overridden for multi-namespace deployments in combined charts.
+The value is declared under `global`; a root-level `namespaceOverride` is still honoured so
+overrides written against the older path keep working.
 */}}
 {{- define "kubecube.namespace" -}}
-  {{- if .Values.namespaceOverride -}}
+  {{- if .Values.global.namespaceOverride -}}
+    {{- .Values.global.namespaceOverride -}}
+  {{- else if .Values.namespaceOverride -}}
     {{- .Values.namespaceOverride -}}
   {{- else -}}
     {{- .Release.Namespace -}}
