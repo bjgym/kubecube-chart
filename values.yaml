@@ -141,7 +141,10 @@ kubecube:
     genericAuthMethod: GET
     genericAuthScheme: https
     genericAuthInsecureSkikVerify: true
-    enableVersionConversion: false
+    # Adapt requests to the group/version a member cluster actually serves.
+    # On by default: with it off, a member cluster whose api versions differ
+    # from the ones the control plane assumes fails on every request.
+    enableVersionConversion: true
   env:
     downloadCharts: "false" # todo: this value can be removed
     downloadChartsUrl: "https://kubecube.nos-eastchina1.126.net/helm-chart/third/third-charts.tar.gz" # todo: this value can be removed
