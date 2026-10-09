@@ -15,8 +15,18 @@ webhooks:
         namespace: {{ template "kubecube.namespace" . }}
         port: 8443
         path: /validate-core-kubernetes-v1-resource-quota
-    failurePolicy: Fail
+    # Ignore rather than Fail: warden being unavailable must not block
+    # ResourceQuota changes. The check is an early rejection for the console
+    # path, not the only line of defence.
+    failurePolicy: Ignore
     name: vresourcequota.kb.io
+    # Only namespaces the platform manages carry this label; tenant, project and
+    # space namespaces all get it when they are created. A ResourceQuota created
+    # by anyone else in the cluster is therefore never intercepted.
+    namespaceSelector:
+      matchExpressions:
+        - key: hnc.x-k8s.io/included-namespace
+          operator: Exists
     rules:
       - apiGroups:
           - ""
@@ -29,6 +39,9 @@ webhooks:
         resources:
           - resourcequotas
     sideEffects: None
+    # The check reads the parent CubeResourceQuota from the pivot cluster, so
+    # bound the latency it can add to an admission request.
+    timeoutSeconds: 3
   - admissionReviewVersions:
       - v1
       - v1beta1
