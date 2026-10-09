@@ -1,13 +1,35 @@
 {{- if eq .Values.global.componentsEnable.kubecube "true" }}
+{{- $global := .Values.kubecube.authConfig.global }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kubecube-auth-config
   namespace: {{ template "kubecube.namespace" . }}
 data:
+  # Defaults every identity provider inherits when it does not set its own.
+  # The login page reads this block to brand the provider buttons.
+  global: |
+    describeName: {{ $global.describeName | default "Kubecube" }}
+    host: {{ $global.host }}
+    img: {{ $global.img }}
   github: |
     enabled: {{ .Values.kubecube.authConfig.github.enabled }}
+    type: github
     clientId: {{ .Values.kubecube.authConfig.github.clientId }}
     clientSecret: {{ .Values.kubecube.authConfig.github.clientSecret }}
+    host: {{ $global.host }}
+    describeName: {{ $global.describeName | default "Kubecube" }}
+    img: {{ $global.img }}
+    loginUrl: https://github.com/login/oauth/authorize?client_id=CLIENT_ID_VALUE&state=STATE&scope=SCOPE_VALUE&redirect_uri=HOST_VALUE/#/login
+{{- range $name, $provider := .Values.kubecube.authConfig.sso }}
+  {{ $name }}: |
+    enabled: {{ $provider.enabled | default false }}
+    type: {{ $provider.type | default "sso" }}
+    clientId: {{ $provider.clientId }}
+    host: {{ $provider.host | default $global.host }}
+    describeName: {{ $provider.describeName | default $global.describeName }}
+    img: {{ $provider.img | default $global.img }}
+    loginUrl: {{ $provider.loginUrl }}
+{{- end }}
 ---
 {{- end }}

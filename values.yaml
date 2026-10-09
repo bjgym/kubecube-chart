@@ -152,10 +152,44 @@ kubecube:
 
   # kubecube/kubecube-auth-config.yaml
   authConfig:
+    # Defaults every identity provider inherits when it does not set its own.
+    # describeName is the product brand shown on the login button and in the
+    # browser title; it is the chart-side counterpart of the front end's
+    # KUBECUBE_BRAND_NAME build argument.
+    global:
+      describeName: "Kubecube"
+      # Public base URL of the console, used as the OAuth redirect target.
+      host: ""
+      # Icon URL for the provider button; empty falls back to the bundled icon.
+      img: ""
     github:
       enabled: false
       clientId: ""
       clientSecret: ""
+    # Generic OAuth2 / SSO providers, keyed by the name the login page shows and
+    # that /api/v1/cube/oauth/redirect receives as the `key` query parameter.
+    # The public half is rendered into the kubecube-auth-config ConfigMap; the
+    # private half (clientSecret, tokenUrl, userUrl) goes into the Secret of the
+    # same name, which only the cube service reads.
+    #
+    # `type` selects the backend login path and is one of:
+    #   sso     - the OAuth2 flow implemented by this block (the default)
+    #   github  - the built-in GitHub provider
+    #   generic - authenticate from request headers injected by an upstream
+    #             gateway instead of exchanging a code
+    #
+    #   sso:
+    #     corp-sso:
+    #       enabled: true
+    #       type: sso
+    #       describeName: "My Cloud"
+    #       clientId: "my-client-id"
+    #       clientSecret: "my-client-secret"
+    #       host: "https://kubecube.example.com"
+    #       loginUrl: "https://sso.example.com/oauth2/authorize?response_type=code&client_id=CLIENT_ID_VALUE&scope=SCOPE_VALUE&redirect_uri=HOST_VALUE"
+    #       tokenUrl: "https://sso.example.com/oauth2/token?client_id=%s&client_secret=%s&code=%s"
+    #       userUrl: "https://sso.example.com/oauth2/user?access_token=%s"
+    sso: {}
 
 warden:
   # warden/deployment.yaml
