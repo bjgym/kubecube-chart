@@ -27,6 +27,8 @@ rules:
       - get
       - list
       - watch
+  # namespaces and nodes are cluster-scoped, so a write here would reach every
+  # namespace and every node in the cluster rather than the tenant's own.
   - apiGroups:
       - "*"
     resources:
@@ -35,8 +37,6 @@ rules:
       - get
       - list
       - watch
-      - update
-      - patch
   - apiGroups:
       - "*"
     resources:
@@ -53,20 +53,10 @@ rules:
       - get
       - list
       - watch
-      - update
-      - patch
   - apiGroups:
       - "*"
     resources:
       - persistentvolumes
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - "*" #apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
     verbs:
       - get
       - list

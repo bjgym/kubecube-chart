@@ -17,6 +17,7 @@ spec:
         kubecube.io/app: kubecube
         app: kubecube
     spec:
+      serviceAccountName: {{ template "kubecube.serviceAccountName" . }}
       {{- with .Values.kubecube.nodeSelector }}
       nodeSelector:
       {{- toYaml . | nindent 8 }}

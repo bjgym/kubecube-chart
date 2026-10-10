@@ -1,16 +1,187 @@
----
+{{- if or (eq .Values.global.componentsEnable.kubecube "true") (eq .Values.global.componentsEnable.warden "true") }}
+# The platform's own identity.
+#
+# It used to be apiGroups: ['*'], resources: ['*'], verbs: ['*'] plus every
+# non-resource URL, bound to the `default` ServiceAccount of this namespace —
+# the same identity every pod gets by not asking for one. It is now a dedicated
+# ServiceAccount and a rule set written out on purpose.
+#
+# Two things it deliberately does not carry:
+#
+#   * no `*` resource and no `*` verb. A rule set that says everything cannot be
+#     reviewed, and this one is meant to be read;
+#   * no write to pods. Log, exec and port-forward requests reach the cluster as
+#     the user who asked for them, through the auth proxy's impersonation, so
+#     the platform reads pods and nothing more.
+#
+# The section marked "charts the platform installs" is the one piece that is not
+# derived from the platform's own code: the hotplug feature runs Helm, and what
+# a chart creates is decided by the chart. Narrowing that further is a product
+# decision about which charts may be installed, not a permission the platform
+# can infer — it is written out here so the boundary is visible instead of
+# hidden inside a `*`.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kubecube-role
 rules:
-  - apiGroups:
-      - '*'
-    resources:
-      - '*'
-    verbs:
-      - '*'
-  - nonResourceURLs:
-      - '*'
-    verbs:
-      - '*'
+  # The platform's own API objects. It is their controller: it watches them and
+  # writes them, including the finalizer and status subresources.
+  - apiGroups: [cluster.kubecube.io]
+    resources: [clusters]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [cluster.kubecube.io]
+    resources: [clusters/finalizers]
+    verbs: [update]
+  - apiGroups: [cluster.kubecube.io]
+    resources: [clusters/status]
+    verbs: [get, patch, update]
+  - apiGroups: [hotplug.kubecube.io]
+    resources: [hotplugs]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [hotplug.kubecube.io]
+    resources: [hotplugs/finalizers]
+    verbs: [update]
+  - apiGroups: [hotplug.kubecube.io]
+    resources: [hotplugs/status]
+    verbs: [get, patch, update]
+  - apiGroups: [quota.kubecube.io]
+    resources: [cuberesourcequota]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [quota.kubecube.io]
+    resources: [cuberesourcequota/finalizers]
+    verbs: [update]
+  - apiGroups: [quota.kubecube.io]
+    resources: [cuberesourcequota/status]
+    verbs: [get, patch, update]
+  - apiGroups: [tenant.kubecube.io]
+    resources: [projects, tenants]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [tenant.kubecube.io]
+    resources: [projects/finalizers, tenants/finalizers]
+    verbs: [update]
+  - apiGroups: [tenant.kubecube.io]
+    resources: [projects/status, tenants/status]
+    verbs: [get, patch, update]
+  - apiGroups: [user.kubecube.io]
+    resources: [users]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [user.kubecube.io]
+    resources: [users/finalizers]
+    verbs: [update]
+  - apiGroups: [user.kubecube.io]
+    resources: [users/status]
+    verbs: [get, patch, update]
+  - apiGroups: [extension.kubecube.io]
+    resources: [externalresources]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [app.kubecube.io]
+    resources: [resourcegroups, agentsessions, changerequests]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [app.kubecube.io]
+    resources: [resourcegroups/status, agentsessions/status, changerequests/status]
+    verbs: [get, patch, update]
+
+  # Namespaces: a tenant's, a project's and a space's are created here, labelled
+  # here and adopted here. The platform also watches every namespace, which is
+  # how it finds the ones it owns.
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources: [namespaces/status]
+    verbs: [get, patch, update]
+
+  # What makes a role real: the roles, the bindings and the service accounts
+  # they bind.
+  - apiGroups: [""]
+    resources: [serviceaccounts]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, rolebindings, clusterroles, clusterrolebindings]
+    verbs: [create, delete, get, list, patch, update, watch]
+
+  # Configuration and credentials: the platform's own configmaps, the kubeconfigs
+  # and the TLS material it mints for member clusters.
+  - apiGroups: [""]
+    resources: [configmaps, secrets]
+    verbs: [create, delete, get, list, patch, update, watch]
+
+  # Quota: the pivot quota objects and the namespaces' own ResourceQuotas, which
+  # the platform keeps in step with them.
+  - apiGroups: [""]
+    resources: [resourcequotas, limitranges]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources: [resourcequotas/status]
+    verbs: [get, patch, update]
+
+  # Both managers hold a leader election lease, so without this rule neither
+  # starts.
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [create, get, list, patch, update, watch]
+
+  # What the platform reports: it writes events, and it reads what runs.
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, get, list, patch, watch]
+  - apiGroups: [events.k8s.io]
+    resources: [events]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods, pods/log, pods/status, services, endpoints, nodes, persistentvolumeclaims, persistentvolumes, storageclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [metrics.k8s.io]
+    resources: [pods, nodes]
+    verbs: [get, list, watch]
+
+  # Custom resource definitions: the platform reads the ones a cluster serves,
+  # and the charts it installs may carry them.
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [create, delete, get, list, patch, update, watch]
+
+  # The auth proxy answers as the user who asked, which is a permission of its
+  # own.
+  - apiGroups: [""]
+    resources: [users, groups]
+    verbs: [impersonate]
+
+  # Discovery, which every client the platform builds starts with. This is the
+  # set the cluster's own system:discovery role grants.
+  - nonResourceURLs: ["/api", "/api/*", "/apis", "/apis/*", "/healthz", "/livez", "/openapi", "/openapi/*", "/readyz", "/version", "/version/"]
+    verbs: [get]
+
+  # Charts the platform installs. The hotplug feature runs Helm against this
+  # cluster, so these are the groups a chart installs into. They are listed
+  # rather than covered by a `*`, and deciding which charts may be installed is
+  # still open — this section is where that decision will be made.
+  - apiGroups: [apps]
+    resources: [deployments, daemonsets, statefulsets, replicasets, controllerrevisions]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources: [services, endpoints, persistentvolumeclaims, replicationcontrollers]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, ingressclasses, networkpolicies]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [storage.k8s.io]
+    resources: [storageclasses, csidrivers, csinodes, volumeattachments]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [admissionregistration.k8s.io]
+    resources: [mutatingwebhookconfigurations, validatingwebhookconfigurations]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [apiregistration.k8s.io]
+    resources: [apiservices]
+    verbs: [create, delete, get, list, patch, update, watch]
+{{- end }}

@@ -7,6 +7,10 @@ roleRef:
   kind: ClusterRole
   name: kubecube-role
 subjects:
+  # The platform's own ServiceAccount, named by the Deployments that use it. It
+  # used to be `default`, which is what every pod in the namespace gets by not
+  # asking for one — so the platform's permissions were also the permissions of
+  # anything else that landed there.
   - kind: ServiceAccount
-    name: default
+    name: {{ template "kubecube.serviceAccountName" . }}
     namespace: {{ template "kubecube.namespace" . }}

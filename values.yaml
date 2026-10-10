@@ -106,6 +106,13 @@ global:
     cfssl: cfssl:v1.6.5
     kubectl: bitnami-kubectl:1.25.7
 
+# The identity the platform's own components run as. Both Deployments name it,
+# and the ClusterRole that carries the platform's permissions is bound to it
+# alone — it is no longer the namespace's `default` ServiceAccount.
+serviceAccount:
+  create: true
+  name: kubecube
+
 kubecube:
   # kubecube/deployment.yaml
   replicas: 1
