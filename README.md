@@ -141,6 +141,46 @@ Both should return nothing. A namespace the platform cannot place is left exactl
 as it is rather than guessed at, so a namespace with no owner label is not
 necessarily a failure — it is one the platform declined to claim.
 
+## Image tags
+
+`values.yaml` is the only place a platform image tag is declared, under
+`global.images`. `images.list` is what the installer pre-pulls
+(`kubecube-installer/install_k8s.sh`), so the two must agree: a tag bumped in one
+file and not the other pre-pulls an image the cluster never runs, and an
+air-gapped install cannot recover from that. Check them before changing either:
+
+```console
+hack/verify-images.sh
+```
+
+The check is one-directional on purpose. `images.list` also carries subchart and
+hotplug images, and older ingress controller tags kept for clusters on older
+releases, that no `global.images` key describes, so requiring every line to be
+derivable would fail on a correct file.
+
+### Images deployed into member clusters
+
+Three of these images are not used by the chart's own workloads. The control
+plane deploys them into each member cluster when that cluster is registered:
+
+| values key | environment variable | what it runs |
+|---|---|---|
+| `global.images.warden` | `WARDEN_IMAGE` | the warden Deployment in the member cluster |
+| `global.images.wardenInit` | `WARDEN_INIT_IMAGE` | warden's init container, which unpacks the third-party chart cache into the `helm-pkg` volume |
+| `global.images.dependenceJob` | `DEPENDENCE_JOB_IMAGE` | a Job named `install-dependence` |
+
+`warden-dependence` is the one bootstrap image whose source is not in this
+workspace — it is built elsewhere, and nothing here records what it does. What
+the control plane does with it is visible in `KubeCube`: the Job mounts the
+node's `/etc/kubernetes/pki` **writable** on a node carrying
+`node-role.kubernetes.io/master`, runs before warden is deployed, and the
+controller waits up to five minutes for it to complete. Treat it as a mutation of
+the member cluster's control plane rather than as a container start, and read the
+decision record before changing anything about it:
+`.agents/notes/proposed/architecture/2026-10-10-remove-warden-dependence-bootstrap.md`
+in the workspace root — it separates what is established from what is still
+unknown, and says why the difference matters.
+
 ## Uninstalling the Chart
 > **Note**: not found error can be ignored. 
 
