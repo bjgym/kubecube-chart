@@ -10,6 +10,9 @@
   and the Secrets they reference are materialised by warden instead of being
   propagated, and a tenant's deletion cascades to its projects instead of being
   refused.
+- member clusters can run the cloud shell: a shell that does not run in the pivot
+  fetches the user's kubeconfig from the pivot's NodePort, and the member install
+  example enables the component
 
 ## BugFix
 - address the project and tenant webhooks from the release namespace
