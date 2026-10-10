@@ -101,6 +101,46 @@ warden:
 helm install warden -n kubecube-system --create-namespace ./kubecube-chart -f ./member-value.yaml
 ```
 
+## Upgrading from a release that installed HNC
+
+This chart no longer installs HNC. Helm deletes only what it still renders, so an
+upgrade leaves the HNC an earlier release installed **running** — its manager, its
+webhooks and its CRDs — and they keep intercepting writes to every namespace the
+platform owns. Remove them by hand, before or right after the upgrade:
+
+```console
+kubectl delete ns hnc-system
+kubectl delete mutatingwebhookconfiguration hnc-mutating-webhook-configuration
+kubectl delete validatingwebhookconfiguration hnc-validating-webhook-configuration
+kubectl delete crd hierarchyconfigurations.hnc.x-k8s.io hncconfigurations.hnc.x-k8s.io subnamespaceanchors.hnc.x-k8s.io
+kubectl delete clusterrole hnc-admin-role hnc-manager-role hnc-proxy-role
+```
+
+Deleting the namespace is not enough on its own: the webhook configurations and
+the CRDs are cluster-scoped, so they outlive it, and a webhook whose service has
+gone blocks every write to a managed namespace when its `failurePolicy` is `Fail`.
+
+Nothing else is asked of you. The platform carries the tenancy itself now:
+
+- warden labels every namespace it can place with `kubecube.io/namespace-owner`
+  and its two derived keys, and strips the HNC labels and annotations from those
+  same namespaces as it goes;
+- a project's AlertmanagerConfigs, and exactly the Secrets they reference, are
+  materialised into that project's spaces by warden rather than propagated by HNC;
+- deleting a tenant deletes its projects, and deleting a project removes its
+  namespace, so the tree is deleted from the top instead of the bottom.
+
+To check that the cleanup has finished:
+
+```console
+kubectl get ns -l kubecube.hnc.x-k8s.io/tenant
+kubectl get ns -l hnc.x-k8s.io/included-namespace
+```
+
+Both should return nothing. A namespace the platform cannot place is left exactly
+as it is rather than guessed at, so a namespace with no owner label is not
+necessarily a failure — it is one the platform declined to claim.
+
 ## Uninstalling the Chart
 > **Note**: not found error can be ignored. 
 
