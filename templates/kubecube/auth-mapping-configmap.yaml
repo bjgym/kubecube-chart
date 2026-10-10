@@ -5,40 +5,72 @@ metadata:
   name: kubecube-auth-mapping
   namespace: {{ template "kubecube.namespace" . }}
 data:
-  deployments.manage: "deployments;deployments/rollback;deployments/scale;deployments/status;replicasets;replicasets/scale;replicasets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  statefulsets.manage: "statefulsets;statefulsets/scale;statefulsets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  daemonsets.manage: "daemonsets;daemonsets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  cronjobs.manage: "cronjobs;cronjobs/status;jobs;jobs/status;dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  jobs.manage: "jobs;jobs/status;dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  pods.manage: "dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec"
-  services.manage: "services;services/status;endpoints;events;pods"
-  ingresses.manage: "ingresses;ingresses/status;services;secrets"
-  loadbalancer.manager: "loadbalancers;dashboards;events"
-  stroage.manage: "persistentvolumeclaims;persistentvolumeclaims/status;pods;dashboards"
-  secrets.manage: "secrets"
-  configmaps.manage: "configmaps"
-  pdb.manage: "poddisruptionbudgets;poddisruptionbudgets/status"
-  olm.manage: "catalogsources;packagemanifests;clusterserviceversions;operatorgroups;subscriptions;installplans"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kubecube-auth-platform-mapping
-  namespace: {{ template "kubecube.namespace" . }}
-data:
-  deployments.manage: "deployments;deployments/rollback;deployments/scale;deployments/status;replicasets;replicasets/scale;replicasets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  statefulsets.manage: "statefulsets;statefulsets/scale;statefulsets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  daemonsets.manage: "daemonsets;daemonsets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  cronjobs.manage: "cronjobs;cronjobs/status;jobs;jobs/status;dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  jobs.manage: "jobs;jobs/status;dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
-  pods.manage: "dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec"
-  services.manage: "services;services/status;endpoints;events;pods"
-  ingresses.manage: "ingresses;ingresses/status;services;secrets"
-  loadbalancer.manager: "loadbalancers;dashboards;events"
-  stroage.manage: "persistentvolumeclaims;persistentvolumeclaims/status;pods;dashboards"
-  secrets.manage: "secrets"
-  configmaps.manage: "configmaps"
-  pdb.manage: "poddisruptionbudgets;poddisruptionbudgets/status"
-  olm.manage: "catalogsources;packagemanifests;clusterserviceversions;operatorgroups;subscriptions;installplans"
-  crds.manage: "customresourcedefinitions"
-  {{- end }}
+  # The catalogue is the server's definition of what may be granted, and at
+  # which levels. A console chooses items from it; it never defines rules, and an
+  # item it does not hold fails the whole request rather than being dropped.
+  #
+  # A level is a property of the item, not of the reader: it used to be decided
+  # by the role's kubecube.io/role label, which meant a role whose label
+  # disagreed silently lost items instead of reporting anything.
+  #
+  # levels: platform — the whole platform; tenant — one tenant; project — one
+  # project. The values are the ones the kubecube.io/role label carries.
+  catalogue: |
+    items:
+      deployments.manage:
+        resources: "deployments;deployments/rollback;deployments/scale;deployments/status;replicasets;replicasets/scale;replicasets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
+        levels: [platform, tenant, project]
+      statefulsets.manage:
+        resources: "statefulsets;statefulsets/scale;statefulsets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
+        levels: [platform, tenant, project]
+      daemonsets.manage:
+        resources: "daemonsets;daemonsets/status;dashboards;horizontalpodautoscalers;horizontalpodautoscalers/status;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
+        levels: [platform, tenant, project]
+      cronjobs.manage:
+        resources: "cronjobs;cronjobs/status;jobs;jobs/status;dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
+        levels: [platform, tenant, project]
+      jobs.manage:
+        resources: "jobs;jobs/status;dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec;configmaps;secrets;resourcequotas;persistentvolumeclaims"
+        levels: [platform, tenant, project]
+      pods.manage:
+        resources: "dashboards;events;pods;pods/log;pods/attach;pods/status;pods/exec"
+        levels: [platform, tenant, project]
+      services.manage:
+        resources: "services;services/status;endpoints;events;pods"
+        levels: [platform, tenant, project]
+      ingresses.manage:
+        resources: "ingresses;ingresses/status;services;secrets"
+        levels: [platform, tenant, project]
+      loadbalancer.manage:
+        resources: "loadbalancers;dashboards;events"
+        levels: [platform, tenant, project]
+      storage.manage:
+        resources: "persistentvolumeclaims;persistentvolumeclaims/status;pods;dashboards"
+        levels: [platform, tenant, project]
+      secrets.manage:
+        resources: "secrets"
+        levels: [platform, tenant, project]
+      configmaps.manage:
+        resources: "configmaps"
+        levels: [platform, tenant, project]
+      pdb.manage:
+        resources: "poddisruptionbudgets;poddisruptionbudgets/status"
+        levels: [platform, tenant, project]
+      olm.manage:
+        resources: "catalogsources;packagemanifests;clusterserviceversions;operatorgroups;subscriptions;installplans"
+        levels: [platform, tenant, project]
+      # resourcegroups/members is a permission the platform evaluates itself, the
+      # way deployments/rollback already is: declaring a member writes a label on
+      # somebody else's object, so it is not a right the object's own resource
+      # can express.
+      resourcegroups.manage:
+        resources: "resourcegroups;resourcegroups/status"
+        levels: [platform, tenant, project]
+      resourcegroups.scope:
+        resources: "resourcegroups/members"
+        levels: [platform, tenant, project]
+      # Managing the cluster's own CRDs is the platform's business alone.
+      crds.manage:
+        resources: "customresourcedefinitions"
+        levels: [platform]
+{{- end }}
