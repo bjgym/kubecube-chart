@@ -7,7 +7,6 @@ global:
 
   # set "true" to deploy if there were not already in cluster.
   dependencesEnable:
-    hnc: "true"
     ingressController: "true"
     localPathStorage: "true"
     metricServer: "true"
@@ -99,7 +98,6 @@ global:
     audit: audit:v1.2.0
     webconsole: webconsole:v1.3.0
     cloudshell: cloudshell:v1.2.6
-    hnc: hnc-manager:v1.0.0
     ingressController: ingress-nginx-controller:v1.2.0
     ingressControllerJob: ingress-nginx-kube-webhook-certgen:v1.1.1
     localPathStorageProvisioner: rancher-local-path-provisioner:v0.0.19-m
@@ -318,26 +316,6 @@ frontend:
   tolerations:
     - key: node-role.kubernetes.io/master
       operator: Exists
-
-# override hnc sub chart
-hnc:
-  # hnc/deployment.yaml
-  nodeSelector: { }
-  affinity: { }
-  tolerations:
-    - key: node-role.kubernetes.io/master
-      operator: Exists
-  manager:
-    args:
-      managedLabel1: kubecube.hnc.x-k8s.io/tenant
-      managedLabel2: kubecube.hnc.x-k8s.io/project
-    resources:
-      limits:
-        cpu: 100m
-        memory: 300Mi
-      requests:
-        cpu: 100m
-        memory: 150Mi
 
 ## override ingress-controller sub chart
 #ingress-controller:

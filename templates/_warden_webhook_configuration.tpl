@@ -25,7 +25,7 @@ webhooks:
     # by anyone else in the cluster is therefore never intercepted.
     namespaceSelector:
       matchExpressions:
-        - key: hnc.x-k8s.io/included-namespace
+        - key: kubecube.io/namespace-owner
           operator: Exists
     rules:
       - apiGroups:

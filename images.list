@@ -16,7 +16,6 @@ docker.io/kubecube/node-exporter:v1.1.2
 docker.io/kubecube/prometheus:v2.26.1
 docker.io/kubecube/thanos:v0.22.0
 docker.io/kubecube/kubectl-tools:1.21.0
-docker.io/kubecube/hnc-manager:v1.0.0
 docker.io/kubecube/ingress-nginx-controller:v0.46.0-m
 docker.io/kubecube/ingress-nginx-controller:v1.2.0
 docker.io/kubecube/ingress-nginx-kube-webhook-certgen:v1.1.1

@@ -20,21 +20,19 @@ kubeVersion: ">= 1.16.0-0"
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 1.0.1
+version: 1.1.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 appVersion: 1.8.2
 
-# The four subcharts are vendored under charts/ and pinned together. Declaring
+# The three subcharts are vendored under charts/ and pinned together. Declaring
 # them makes `helm lint` verify they are present at the expected version instead
 # of silently ignoring the directory. The name of the ingress controller
 # subchart is misspelled in its own Chart.yaml; it is repeated here verbatim
 # because that is the name Helm matches on.
 dependencies:
-  - name: hnc
-    version: 22.0.1-alpha.1
   - name: ingress-contoller
     version: 22.0.1-alpha.1
   - name: local-path-storage

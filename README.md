@@ -133,5 +133,5 @@ The command removes all the Kubernetes components associated with the chart and 
 kubectl delete sa/kubecube-pre-job -n kubecube-system
 kubectl delete clusterRole/kubecube-pre-job 
 kubectl delete clusterRoleBinding/kubecube-pre-job
-kubectl delete ns kubecube-system hnc-system kubecube-monitoring
+kubectl delete ns kubecube-system kubecube-monitoring
 ```

@@ -910,19 +910,6 @@ rules:
       - patch
       - update
   - apiGroups:
-      - "*" #hnc.x-k8s.io
-    resources:
-      - hierarchyconfigurations
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-      - deletecollection
-      - patch
-      - update
-  - apiGroups:
       - "*"
     resources:
       - subnamespaceanchors
