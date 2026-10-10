@@ -78,7 +78,7 @@ global:
     warden: "true"
     audit: "false"
     webconsole: "false"
-    cloudshell: "false"
+    cloudshell: "true"
     frontend: "false"
     
   # set "enabled" if wanna open log application.
@@ -100,6 +100,8 @@ warden:
 ```console
 helm install warden -n kubecube-system --create-namespace ./kubecube-chart -f ./member-value.yaml
 ```
+
+A member cluster that enables `componentsEnable.cloudshell` runs its own cloud shell, and that shell fetches the user's kubeconfig from the pivot at `https://<global.nodeIP>:30443`. Set `nodeIP` to the pivot's control-plane node IP and make that NodePort reachable from the member cluster. The pivot's own cloud shell reaches cube through its Service and needs neither.
 
 ## Upgrading from a release that installed HNC
 
