@@ -1,6 +1,10 @@
 # v1.8.3
 
 ## Feature
+- tolerate both `node-role.kubernetes.io/master` and
+  `node-role.kubernetes.io/control-plane` taints on every platform deployment
+  and the metrics-server subchart, so the chart schedules on kubeadm ≥1.25 and
+  k0s ≥1.33 control-plane nodes without extra flags
 - replace image pin to docker hub
 - configurable sso identity providers, with the private half kept in a Secret
 - enable api version conversion by default

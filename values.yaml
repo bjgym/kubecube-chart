@@ -130,6 +130,8 @@ kubecube:
   tolerations:
     - key: node-role.kubernetes.io/master
       operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
   args:
     maxSize: 1000
     maxBackups: 7
@@ -207,6 +209,8 @@ warden:
   tolerations:
     - key: node-role.kubernetes.io/master
       operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
     - effect: NoSchedule
       key: node.kubecube.io
       operator: Exists
@@ -258,6 +262,8 @@ audit:
   tolerations:
     - key: node-role.kubernetes.io/master
       operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
 
 webconsole:
   # webconsole/deployment.yaml
@@ -284,6 +290,8 @@ webconsole:
   tolerations:
     - key: node-role.kubernetes.io/master
       operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
   jwtSecret: 56F0D8DB90241C6E
 
 cloudshell:
@@ -302,6 +310,8 @@ cloudshell:
   affinity: { }
   tolerations:
     - key: node-role.kubernetes.io/master
+      operator: Exists
+    - key: node-role.kubernetes.io/control-plane
       operator: Exists
 
 frontend:
@@ -322,6 +332,8 @@ frontend:
   affinity: { }
   tolerations:
     - key: node-role.kubernetes.io/master
+      operator: Exists
+    - key: node-role.kubernetes.io/control-plane
       operator: Exists
 
 ## override ingress-controller sub chart
