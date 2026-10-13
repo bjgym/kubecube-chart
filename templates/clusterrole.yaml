@@ -100,6 +100,15 @@ rules:
   - apiGroups: [rbac.authorization.k8s.io]
     resources: [roles, rolebindings, clusterroles, clusterrolebindings]
     verbs: [create, delete, get, list, patch, update, watch]
+  # The platform materializes the bindings its users hold. The API server only
+  # lets it bind a role the platform itself holds, which is none of the roles it
+  # manages, so without bind and escalate every binding it writes is refused and
+  # the first one it writes is the built-in admin's own. The platform's
+  # authorization decides who may be granted what; these two verbs are what let
+  # that decision reach the API server.
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, clusterroles]
+    verbs: [bind, escalate]
 
   # Configuration and credentials: the platform's own configmaps, the kubeconfigs
   # and the TLS material it mints for member clusters.

@@ -26,6 +26,10 @@
 - run the webconsole and audit deployments under the platform service account,
   so webconsole leader election and the audit service's Hotplug watch are
   authorized instead of running as `default`
+- grant the platform `bind` and `escalate` on roles and clusterroles: without
+  them the API server refuses every binding the platform writes — starting with
+  the built-in admin's own, which left the platform with no administrator and no
+  way to appoint one
 
 ## Upgrade
 - this release does not remove the HNC deployment an earlier release installed:
