@@ -23,6 +23,9 @@
 - scope the resource quota webhook to platform namespaces
 - honour global.namespaceOverride
 - remove the unused frontend image values
+- run the webconsole and audit deployments under the platform service account,
+  so webconsole leader election and the audit service's Hotplug watch are
+  authorized instead of running as `default`
 
 ## Upgrade
 - this release does not remove the HNC deployment an earlier release installed:
