@@ -30,6 +30,10 @@
   them the API server refuses every binding the platform writes — starting with
   the built-in admin's own, which left the platform with no administrator and no
   way to appoint one
+- sync the User CRD in `crds/crds.yaml` with its source in `KubeCube/config/crd/bases`:
+  it was missing `spec.scopeBindings` and `status.belongProjectInfos`, so the API
+  server pruned every scope binding on write and no user could ever be recorded
+  as a platform administrator
 
 ## Upgrade
 - this release does not remove the HNC deployment an earlier release installed:
