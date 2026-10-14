@@ -38,6 +38,13 @@
   it was missing `spec.scopeBindings` and `status.belongProjectInfos`, so the API
   server pruned every scope binding on write and no user could ever be recorded
   as a platform administrator
+- read the custom certificate from the values `values.yaml` documents.
+  `tls-secret.yaml` read `global.certs.tls.*` and `global.certs.ca.*`, which
+  nothing sets, so `certs.mode: custom` rendered a Secret with no data in it and
+  the failure surfaced later as a TLS error somewhere else. The values are PEM
+  and a Secret's data is base64, so they are encoded the way the pre-install
+  job's "auto" path encodes them, and an unset value now fails at render time
+  and names itself instead of rendering an empty Secret
 
 ## Upgrade
 - this release does not remove the HNC deployment an earlier release installed:

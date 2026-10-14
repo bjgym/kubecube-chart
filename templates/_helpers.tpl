@@ -81,6 +81,6 @@ overrides written against the older path keep working.
 caBundle: {{ print "{{ ca_crt }}" }}
 {{- end }}
 {{- if eq .Values.global.certs.mode "custom" }}
-caBundle: {{ b64enc .Values.global.certs.custom.caCrt }}
+caBundle: {{ required "global.certs.custom.caCrt must be set when global.certs.mode is custom" .Values.global.certs.custom.caCrt | b64enc }}
 {{- end }}
 {{- end -}}
