@@ -1442,6 +1442,25 @@ rules:
       - deletecollection
       - patch
       - update
+  # Cilium is the project's default CNI, so its resources are part of what the
+  # platform manages. Calico stays below: a member cluster is free to run it.
+  - apiGroups:
+      - "*" #crd.cilium.io
+    resources:
+      - ciliumnetworkpolicies
+      - ciliumclusterwidenetworkpolicies
+      - ciliumendpoints
+      - ciliumidentities
+      - ciliumnodes
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
   - apiGroups:
       - "*" #crd.projectcalico.org
     resources:

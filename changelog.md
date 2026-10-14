@@ -1,6 +1,10 @@
 # v1.8.3
 
 ## Feature
+- grant the platform the Cilium CRDs — network policies, cluster-wide network
+  policies, endpoints, identities and nodes — beside the calico ones it already
+  held. Cilium is the CNI the installer now installs by default, and a member
+  cluster is still free to run calico
 - tolerate both `node-role.kubernetes.io/master` and
   `node-role.kubernetes.io/control-plane` taints on every platform deployment
   and the metrics-server subchart, so the chart schedules on kubeadm ≥1.25 and

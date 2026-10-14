@@ -916,6 +916,20 @@ rules:
       - get
       - list
       - watch
+  # Cilium is the project's default CNI; the reviewer reads it and changes
+  # nothing. Calico stays below for member clusters that run it.
+  - apiGroups:
+      - "*" #crd.cilium.io
+    resources:
+      - ciliumnetworkpolicies
+      - ciliumclusterwidenetworkpolicies
+      - ciliumendpoints
+      - ciliumidentities
+      - ciliumnodes
+    verbs:
+      - get
+      - list
+      - watch
   - apiGroups:
       - "*" #crd.projectcalico.org
     resources:
