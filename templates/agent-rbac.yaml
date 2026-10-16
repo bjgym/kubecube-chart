@@ -1,0 +1,226 @@
+{{- if eq .Values.global.componentsEnable.warden "true" }}
+# The two credentials the platform keeps for clusters it does not run in.
+#
+# Both used to be a cluster's admin kubeconfig, handed over at install time and
+# left in a Secret: a credential that cannot be narrowed, cannot be revoked, and
+# that turns any read of that Secret into control of the cluster. What replaces
+# them here is a ServiceAccount per direction, bound to a rule set written out
+# from the call sites, and handed over as a token that can be revoked by deleting
+# the Secret that carries it.
+#
+# kubecube-member-credential — the pivot's identity in a member cluster.
+#
+#   The pivot's control plane loads the member's kubeconfig from the Cluster CR
+#   (pkg/multicluster/manager.go:126) and uses it two ways: as an http transport
+#   for the proxy, and as a typed client for its own controllers.
+#
+#   Two parts of it genuinely cannot be narrowed, and both are written here so
+#   the boundary is visible rather than implied by a `*`:
+#
+#     * `impersonate` on users and groups. The proxy sets Impersonate-User from
+#       the caller (pkg/apiserver/cubeapi/resourcemanage/handle/proxy.go:151) and
+#       the member's apiserver then authorizes the *impersonated* identity, so
+#       what the proxy reaches is decided by that user's RBAC, not by this rule
+#       set. The same is true of yamldeploy (yamldeploy.go:160).
+#     * the member's authorization model is read cluster-wide: users, roles,
+#       clusterroles and bindings, tenants and projects
+#       (pkg/authorizer/rbac/extractor.go:58-105).
+#
+#   Everything else is bounded on purpose. There is no secret read anywhere in
+#   the platform's member-side code, so this role cannot read one; there is no
+#   delete outside namespaces, no exec, no node write, and no `*` in any field.
+#
+# warden-role — a warden's identity on its pivot.
+#
+#   The warden registers itself (pkg/warden/reporter/report.go:76 — create only;
+#   the Cluster's status is written by the pivot's own scout), watches the
+#   platform's objects to mirror them locally (pkg/warden/syncmgr/resources.go:35-65)
+#   and maintains the aggregate-to-* roles (warden/localmgr/controllers/crds/crds_controller.go:95,114).
+#   It does not read pivot namespaces or secrets, and it takes no lease: its
+#   leader election runs on the local cluster.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubecube-member-agent
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/component: member-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubecube-member-credential
+  labels:
+    kubecube.io/component: member-agent
+rules:
+  # Not narrowable: the proxy serves any caller as that caller.
+  - apiGroups: [""]
+    resources: [users, groups]
+    verbs: [impersonate]
+  # Discovery. The typed client asks for the server version and builds a REST
+  # mapper lazily (pkg/multicluster/manager.go:155, pkg/multicluster/client/client.go:128).
+  - nonResourceURLs: [/api, /api/*, /apis, /apis/*, /version, /version/]
+    verbs: [get]
+
+  # What the platform creates in a member (pkg/ctrlmgr/controllers/cluster/resources.go:58-157).
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [create, delete]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [clusterroles, clusterrolebindings]
+    verbs: [create]
+  # Created, never read: the tls secret and the kubeconfigs it installs there.
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [resourcequotas]
+    verbs: [create]
+
+  # The platform's views over the member. The informer-backed reads need watch
+  # as well as list, or the caches behind them never sync.
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+  # Read as the credential's own identity, after a separate access check
+  # (pkg/apiserver/cubeapi/resourcemanage/handle/podlog.go:161).
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [get, list, watch, create]
+  - apiGroups: [""]
+    resources: [endpoints]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    verbs: [list, watch]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [list, watch]
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [get, list, watch, create, update, delete]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, watch, create]
+  - apiGroups: [apps]
+    resources: [replicasets]
+    verbs: [list, watch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, watch, create]
+  - apiGroups: [batch]
+    resources: [cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [metrics.k8s.io]
+    resources: [nodes]
+    verbs: [list]
+  - apiGroups: [quota.kubecube.io]
+    resources: [cuberesourcequota]
+    verbs: [list, watch]
+
+  # The member's authorization model, read cluster-wide: this is what decides
+  # whether a request may proceed, so it cannot be scoped to a namespace.
+  - apiGroups: [user.kubecube.io]
+    resources: [users]
+    verbs: [get, list, watch]
+  - apiGroups: [tenant.kubecube.io]
+    resources: [tenants]
+    verbs: [get, list, watch]
+  - apiGroups: [tenant.kubecube.io]
+    resources: [projects]
+    verbs: [list, watch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, clusterroles, rolebindings, clusterrolebindings]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubecube-member-credential
+  labels:
+    kubecube.io/component: member-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubecube-member-credential
+subjects:
+  - kind: ServiceAccount
+    name: kubecube-member-agent
+    namespace: {{ template "kubecube.namespace" . }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: warden-agent
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/component: warden-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: warden-role
+  labels:
+    kubecube.io/component: warden-agent
+rules:
+  # Registration. Create only: the warden treats AlreadyExists as success and
+  # never writes the status subresource.
+  - apiGroups: [cluster.kubecube.io]
+    resources: [clusters]
+    verbs: [create]
+  - nonResourceURLs: [/api, /api/*, /apis, /apis/*, /version, /version/]
+    verbs: [get]
+  # The objects a warden mirrors into its own cluster.
+  - apiGroups: [user.kubecube.io]
+    resources: [users]
+    verbs: [get, list, watch]
+  - apiGroups: [tenant.kubecube.io]
+    resources: [tenants, projects]
+    verbs: [get, list, watch]
+  - apiGroups: [quota.kubecube.io]
+    resources: [cuberesourcequota]
+    verbs: [get, list, watch]
+  - apiGroups: [quota.kubecube.io]
+    resources: [cuberesourcequota/status]
+    verbs: [update]
+  - apiGroups: [hotplug.kubecube.io]
+    resources: [hotplugs]
+    verbs: [get, list, watch]
+  - apiGroups: [extension.kubecube.io]
+    resources: [externalresources]
+    verbs: [get, list, watch]
+  # The tenancy roles it keeps in step with the platform's aggregate-to-* roles.
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, clusterroles, rolebindings, clusterrolebindings]
+    verbs: [get, list, watch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [clusterroles]
+    verbs: [update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: warden-role
+  labels:
+    kubecube.io/component: warden-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: warden-role
+subjects:
+  - kind: ServiceAccount
+    name: warden-agent
+    namespace: {{ template "kubecube.namespace" . }}
+{{- end }}
