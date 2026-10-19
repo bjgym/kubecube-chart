@@ -59,16 +59,17 @@ data:
       olm.manage:
         resources: "catalogsources;packagemanifests;clusterserviceversions;operatorgroups;subscriptions;installplans"
         levels: [platform, tenant, project]
-      # resourcegroups/members is a permission the platform evaluates itself, the
-      # way deployments/rollback already is: declaring a member writes a label on
-      # somebody else's object, so it is not a right the object's own resource
-      # can express.
-      resourcegroups.manage:
-        resources: "resourcegroups;resourcegroups/status"
-        levels: [platform, tenant, project]
-      resourcegroups.scope:
-        resources: "resourcegroups/members"
-        levels: [platform, tenant, project]
+      # resourcegroups.manage and resourcegroups.scope were declared here ahead of
+      # the feature that would evaluate them, and are removed rather than kept
+      # unchecked. Nothing in a deployment can honour them: the chart installs no
+      # app.kubecube.io CRD, no built-in role grants resourcegroups,
+      # resourcegroups/status or resourcegroups/members, and the string
+      # `resourcegroups/members` is evaluated nowhere in the code. An item here is
+      # a checkbox the console offers, so an item nothing can honour is a promise
+      # the permission page cannot keep — and a custom role could still tick it and
+      # be written rules for an API the cluster does not serve. Put them back
+      # together with the CRD and the evaluation, not before.
+      #
       # Managing the cluster's own CRDs is the platform's business alone.
       crds.manage:
         resources: "customresourcedefinitions"
