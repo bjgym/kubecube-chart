@@ -14,7 +14,7 @@ webhooks:
         name: kubecube
         namespace: {{ template "kubecube.namespace" . }}
         port: {{ .Values.kubecube.args.webhookServerPort }}
-        path: /validate-quota-kubecube-io-v1-cube-resource-quota
+      path: /validate-quota-kubecube-io-v1-cube-resource-quota
     failurePolicy: Fail
     name: vcuberesourcequota.kb.io
     rules:
@@ -38,7 +38,7 @@ webhooks:
         name: kubecube
         namespace: {{ template "kubecube.namespace" . }}
         port: {{ .Values.kubecube.args.webhookServerPort }}
-        path: /validate-hotplug-kubecube-io-v1-hotplug
+      path: /validate-hotplug-kubecube-io-v1-hotplug
     failurePolicy: Fail
     name: vhotplug.kb.io
     rules:
@@ -62,7 +62,7 @@ webhooks:
         name: kubecube
         namespace: {{ template "kubecube.namespace" . }}
         port: {{ .Values.kubecube.args.webhookServerPort }}
-        path: /validate-cluster-kubecube-io-v1-cluster
+      path: /validate-cluster-kubecube-io-v1-cluster
     failurePolicy: Ignore
     name: vcluster.kb.io
     rules:
@@ -86,7 +86,7 @@ webhooks:
         name: kubecube
         namespace: {{ template "kubecube.namespace" . }}
         port: {{ .Values.kubecube.args.webhookServerPort }}
-        path: /validate-tenant-kubecube-io-v1-project
+      path: /validate-tenant-kubecube-io-v1-project
     failurePolicy: Fail
     name: vproject.kb.io
     rules:
@@ -110,7 +110,7 @@ webhooks:
         name: kubecube
         namespace: {{ template "kubecube.namespace" . }}
         port: {{ .Values.kubecube.args.webhookServerPort }}
-        path: /validate-tenant-kubecube-io-v1-tenant
+      path: /validate-tenant-kubecube-io-v1-tenant
     failurePolicy: Fail
     name: vtenant.kb.io
     rules:
