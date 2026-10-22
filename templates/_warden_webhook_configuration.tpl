@@ -14,7 +14,7 @@ webhooks:
         name: warden
         namespace: {{ template "kubecube.namespace" . }}
         port: 8443
-      path: /validate-core-kubernetes-v1-resource-quota
+        path: /validate-core-kubernetes-v1-resource-quota
     # Ignore rather than Fail: warden being unavailable must not block
     # ResourceQuota changes. The check is an early rejection for the console
     # path, not the only line of defence.
@@ -51,7 +51,7 @@ webhooks:
         name: warden
         namespace: {{ template "kubecube.namespace" . }}
         port: 8443
-      path: /warden-validate-hotplug-kubecube-io-v1-hotplug
+        path: /warden-validate-hotplug-kubecube-io-v1-hotplug
     failurePolicy: Fail
     name: vhotplug.kb.io
     rules:
@@ -75,7 +75,7 @@ webhooks:
         name: warden
         namespace: {{ template "kubecube.namespace" . }}
         port: 8443
-      path: /warden-validate-tenant-kubecube-io-v1-project
+        path: /warden-validate-tenant-kubecube-io-v1-project
     failurePolicy: Fail
     name: vproject.kb.io
     rules:
@@ -97,7 +97,7 @@ webhooks:
         name: warden
         namespace: {{ template "kubecube.namespace" . }}
         port: 8443
-      path: /warden-validate-tenant-kubecube-io-v1-tenant
+        path: /warden-validate-tenant-kubecube-io-v1-tenant
     failurePolicy: Fail
     name: vtenant.kb.io
     rules:
