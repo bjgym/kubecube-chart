@@ -12,7 +12,7 @@ global:
 
   # kubecube all images
   images:
-    metricsServer: rancher/metrics-server:v0.4.1-m
+    metricsServer: metrics-server:v0.7.2
 
 tolerations:
   - key: node-role.kubernetes.io/master

@@ -102,7 +102,14 @@ global:
     ingressControllerJob: ingress-nginx-kube-webhook-certgen:v1.1.1
     localPathStorageProvisioner: rancher-local-path-provisioner:v0.0.19-m
     localPathStorageConfigmap: busybox:latest-m
-    metricsServer: rancher-metrics-server:v0.4.1-m
+    # Upstream metrics-server v0.7.2. The Rancher repackaging this used to name,
+    # rancher-metrics-server:v0.4.1-m, publishes only amd64: on an arm64 node the
+    # kubelet cannot resolve the manifest list, treats the image as absent, tries
+    # to pull it, and the pod sits in ImagePullBackOff for as long as the cluster
+    # lives. The sub chart's arguments and probes (/livez, /readyz, uid 1000,
+    # --kubelet-use-node-status-port) are all upstream flags, so the upstream
+    # image is a drop-in.
+    metricsServer: metrics-server:v0.7.2
     cfssl: cfssl:v1.6.5
     kubectl: bitnami-kubectl:1.25.7
 

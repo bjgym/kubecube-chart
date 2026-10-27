@@ -21,7 +21,7 @@ docker.io/kubecube/ingress-nginx-controller:v1.2.0
 docker.io/kubecube/ingress-nginx-kube-webhook-certgen:v1.1.1
 docker.io/kubecube/jettech-kube-webhook-certgen:v1.5.1-kubecube-v1.0.0-89bdbcea-202301131541-multi
 docker.io/kubecube/rancher-local-path-provisioner:v0.0.19-m
-docker.io/kubecube/rancher-metrics-server:v0.4.1-m
+docker.io/kubecube/metrics-server:v0.7.2
 docker.io/kubecube/busybox:latest-m
 docker.io/kubecube/cfssl:v1.6.5
 docker.io/kubecube/bitnami-kubectl:1.25.7

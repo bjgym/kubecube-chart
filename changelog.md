@@ -23,6 +23,14 @@
   example enables the component
 
 ## BugFix
+- name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.
+  `rancher-metrics-server:v0.4.1-m` publishes only amd64, so on an arm64 node the
+  kubelet cannot resolve the manifest list, takes the image for absent, tries to
+  pull it, and the pod stays in ImagePullBackOff for the life of the cluster —
+  with every usage figure in the console reading zero. The subchart's arguments
+  and probes are upstream's own flags, so the upstream image is a drop-in. It has
+  to be published as `docker.io/kubecube/metrics-server:v0.7.2` for the online
+  path; the offline bundle retags it under its own tag
 - address the project and tenant webhooks from the release namespace
 - scope the resource quota webhook to platform namespaces
 - honour global.namespaceOverride
