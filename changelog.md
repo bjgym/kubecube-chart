@@ -31,6 +31,11 @@
   and probes are upstream's own flags, so the upstream image is a drop-in. It has
   to be published as `docker.io/kubecube/metrics-server:v0.7.2` for the online
   path; the offline bundle retags it under its own tag
+- grant `nodes/metrics` to the metrics-server ClusterRole. v0.7.x scrapes
+  `/metrics/resource`, which the kubelet authorizes as `nodes/metrics`; 0.4.1 read
+  `/stats/summary`, so `nodes/stats` was enough. Without it every scrape returns
+  403, the pod stays `0/1`, and an install that waits for the release times out —
+  the image move above is only complete with this rule
 - address the project and tenant webhooks from the release namespace
 - scope the resource quota webhook to platform namespaces
 - honour global.namespaceOverride

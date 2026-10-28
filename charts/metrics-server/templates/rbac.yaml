@@ -40,6 +40,10 @@ rules:
       - pods
       - nodes
       - nodes/stats
+      # v0.7.x scrapes /metrics/resource, which the kubelet authorizes as
+      # nodes/metrics. 0.4.1 read /stats/summary, so nodes/stats was enough; with
+      # only that, every scrape comes back 403 and the pod never becomes ready.
+      - nodes/metrics
       - namespaces
       - configmaps
     verbs:
