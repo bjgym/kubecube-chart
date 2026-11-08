@@ -1,5 +1,5 @@
 docker.io/kubecube/audit:v1.2.0
-docker.io/kubecube/cloudshell:v1.2.6
+ghcr.io/bjgym/kubecube-cloudshell:sha-ab415d20b2fc07455562fce6a47a4376142ce90a
 docker.io/kubecube/webconsole:v1.3.0
 ghcr.io/bjgym/kubecube-front:sha-4b0e3dc8dea05720a77ba6e142721fbb48cf018c
 docker.io/kubecube/cube:v1.8.2

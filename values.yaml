@@ -303,6 +303,10 @@ webconsole:
 
 cloudshell:
   # cloudshell/deployment.yaml
+  # Full image reference override. This fork publishes the multi-arch CloudShell
+  # image from kubecube-webconsole to GitHub Container Registry; an empty value
+  # falls back to global.hub.registry/global.hub.project/global.images.cloudshell.
+  image: "ghcr.io/bjgym/kubecube-cloudshell:sha-ab415d20b2fc07455562fce6a47a4376142ce90a"
   replicas: 1
   resources: { }
     # If you do want to specify resources, uncomment the following

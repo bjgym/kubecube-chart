@@ -37,7 +37,7 @@ spec:
           name: localtime
       containers:
         - name: cloud-shell
-          image: "{{ .Values.global.hub.registry }}/{{ .Values.global.hub.project }}/{{ .Values.global.images.cloudshell }}"
+          image: {{ default (printf "%s/%s/%s" .Values.global.hub.registry .Values.global.hub.project .Values.global.images.cloudshell) .Values.cloudshell.image | quote }}
           env:
             - name: KUBECUBE_NAMESPACE
               value: {{ template "kubecube.namespace" . }}

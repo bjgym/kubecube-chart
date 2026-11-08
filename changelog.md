@@ -34,6 +34,11 @@
   `sha-<commit>` tag, not `latest`. The pinned tag tracks the console release that
   contains the density, responsive table, single-source policy, lazy-loading and
   root-layout changes
+- allow `cloudshell.image` to override the CloudShell image with a full
+  reference. The multi-arch image is built and published from
+  `kubecube-webconsole` by the `publish-cloudshell-image` workflow, pinned to a
+  `sha-<commit>` tag, so CloudShell no longer depends on an image built only on
+  the verification host
 
 ## BugFix
 - name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.
