@@ -323,8 +323,12 @@ cloudshell:
 
 frontend:
   # frontend/deployment.yaml
-  # The image is global.images.frontend and the pull policy is fixed to
-  # IfNotPresent, as for every other component; neither is overridable here.
+  # The image defaults to global.hub.registry/global.hub.project/global.images.frontend.
+  # This fork publishes the Vue 3 console to GitHub Container Registry because the
+  # Docker Hub `kubecube/frontend` repository is not writable from this workspace.
+  # Pin a `sha-<commit>` tag for a release; `latest` is rebuilt on every push.
+  image: "ghcr.io/bjgym/kubecube-front:sha-3f6fe5eded60e4e2fe45723eb9b1327b8be6b63b"
+  # The pull policy is fixed to IfNotPresent, as for every other component.
   replicas: 1
   resources: { }
     # If you do want to specify resources, uncomment the following

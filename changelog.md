@@ -21,6 +21,17 @@
 - member clusters can run the cloud shell: a shell that does not run in the pivot
   fetches the user's kubeconfig from the pivot's NodePort, and the member install
   example enables the component
+- serve the console through the chart's nginx configuration with a `/healthz`
+  endpoint and a `/` redirect to `/public/`, and split its cache policy: the
+  entry `index.html` is never cached while the content-hashed files under
+  `public/assets/` are cached as immutable. The deployment probes `/healthz`
+  instead of the SPA entry
+- allow `frontend.image` to override the console image with a full reference,
+  so the console can be published to a different registry than the platform
+  images without moving the other components. This fork publishes it to
+  `ghcr.io/bjgym/kubecube-front` because the Docker Hub `kubecube/frontend`
+  repository is not writable from this workspace; the default is pinned to a
+  `sha-<commit>` tag, not `latest`
 
 ## BugFix
 - name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.

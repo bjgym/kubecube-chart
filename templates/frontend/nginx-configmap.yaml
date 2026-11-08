@@ -50,13 +50,46 @@ data:
             server_name localhost;
 
             error_page   500 502 503 504  /50x.html;
+
+            # Liveness and readiness for the Deployment. Keep this independent
+            # of the SPA entry so a bad bundle cannot keep the pod "ready".
+            location = /healthz {
+                access_log off;
+                default_type text/plain;
+                return 200 "ok\n";
+            }
+
+            # The console is served under /public/. Keep the bare root useful
+            # instead of returning nginx's default 403.
+            location = / {
+                return 302 /public/;
+            }
+
+            # index.html is the release entry point. It must never be cached
+            # long-term, otherwise a new deployment keeps loading the old
+            # hashed assets.
+            location = /public/index.html {
+                root /usr/share/nginx/html;
+                add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+                add_header Pragma "no-cache" always;
+            }
+
+            # Vite emits content-hashed files under /public/assets/. These are
+            # safe to cache forever.
+            location ^~ /public/assets/ {
+                root /usr/share/nginx/html;
+                add_header Cache-Control "public, max-age=31536000, immutable" always;
+                access_log off;
+            }
+
             location ^~ /public/ {
                 root    /usr/share/nginx/html;
-                expires 30d;
+                expires 1h;
             }
 
             location ~* \.(gif|jpg|jpeg|png|css|js|ico|svg)$ {
                 root /usr/share/nginx/html/public;
+                expires 1h;
             }
 
             location ^~ /api/v1/label {
@@ -107,11 +140,16 @@ data:
             }
             location ^~ /webconsole/api/sockjs {
                 proxy_pass http://webconsole/api/sockjs;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $host;
             }
 
             location / {
                 root /usr/share/nginx/html/public;
                 index index.html index.htm;
+                try_files $uri $uri/ /index.html;
             }
         }
     }

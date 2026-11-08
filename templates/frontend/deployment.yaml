@@ -35,7 +35,7 @@ spec:
       {{- end }}
       containers:
         - name: nginx
-          image: "{{ .Values.global.hub.registry }}/{{ .Values.global.hub.project }}/{{ .Values.global.images.frontend }}"
+          image: {{ default (printf "%s/%s/%s" .Values.global.hub.registry .Values.global.hub.project .Values.global.images.frontend) .Values.frontend.image | quote }}
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.frontend.resources | nindent 12 }}
@@ -45,15 +45,15 @@ spec:
                 command: ["/usr/sbin/nginx","-s","quit"]
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
             initialDelaySeconds: 30
             periodSeconds: 5
           readinessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: 80
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
             periodSeconds: 5
           volumeMounts:
             - name: nginx-config
