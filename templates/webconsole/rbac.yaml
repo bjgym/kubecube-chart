@@ -1,0 +1,33 @@
+{{- if eq .Values.global.componentsEnable.webconsole "true" }}
+# The pivot CloudShell is served by a pod in this namespace. The webconsole
+# reaches it with its own ServiceAccount, so that account needs exec on the
+# CloudShell pod; user-facing container exec goes through the user's own
+# credentials and does not rely on this role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubecube-webconsole-cloudshell
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/app: kubecube-webconsole
+rules:
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubecube-webconsole-cloudshell
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/app: kubecube-webconsole
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubecube-webconsole-cloudshell
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "kubecube.serviceAccountName" . }}
+    namespace: {{ template "kubecube.namespace" . }}
+{{- end }}

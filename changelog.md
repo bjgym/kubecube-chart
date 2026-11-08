@@ -43,6 +43,10 @@
   Its readiness probe reports ready only while the pod holds the leader-election
   lease, so a default rolling update deadlocks with the new pod waiting for a
   lease the old pod still holds
+- grant the webconsole ServiceAccount `pods/exec` in the platform namespace
+  through a namespaced Role and RoleBinding. The pivot CloudShell is a pod in
+  that namespace and the webconsole reaches it with its own identity; without
+  this rule the session opens and immediately closes with a 403
 
 ## BugFix
 - name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.
