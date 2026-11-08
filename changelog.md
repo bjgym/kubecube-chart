@@ -39,6 +39,10 @@
   `kubecube-webconsole` by the `publish-cloudshell-image` workflow, pinned to a
   `sha-<commit>` tag, so CloudShell no longer depends on an image built only on
   the verification host
+- run the single-replica `webconsole` Deployment with the `Recreate` strategy.
+  Its readiness probe reports ready only while the pod holds the leader-election
+  lease, so a default rolling update deadlocks with the new pod waiting for a
+  lease the old pod still holds
 
 ## BugFix
 - name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.

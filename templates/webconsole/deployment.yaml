@@ -8,6 +8,12 @@ metadata:
     kubecube.io/app: kubecube-webconsole
 spec:
   replicas: {{ .Values.webconsole.replicas }}
+  # The webconsole holds a leader-election lease and reports readiness only while
+  # it is the leader. A default rolling update starts the new pod while the old
+  # one still holds the lease, so the new pod never becomes ready and the rollout
+  # deadlocks. Recreate stops the old pod first.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       kubecube.io/app: kubecube-webconsole
