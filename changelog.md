@@ -49,6 +49,10 @@
   this rule the session opens and immediately closes with a 403
 
 ## BugFix
+- make the three console areas explicit in the sidebar: 工作空间, 资源控制台 and,
+  for manager roles, 运维管理. The workspace overview and resource pages now have
+  distinct titles, returning from platform administration lands on 工作空间, and
+  the resource-console landing follows the monitoring feature flag
 - keep the resource-console sidebar on the workspace landing page. Switching
   from 运维管理 to 资源控制台 starts at `/namespace`, which used to be the one
   console route without navigation; the page now renders the same sidebar as the
