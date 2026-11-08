@@ -306,7 +306,7 @@ cloudshell:
   # Full image reference override. This fork publishes the multi-arch CloudShell
   # image from kubecube-webconsole to GitHub Container Registry; an empty value
   # falls back to global.hub.registry/global.hub.project/global.images.cloudshell.
-  image: "ghcr.io/bjgym/kubecube-cloudshell:sha-ab415d20b2fc07455562fce6a47a4376142ce90a"
+  image: "ghcr.io/bjgym/kubecube-cloudshell:sha-3e33370a99420a14b66d81824f8c0372c9ec2b91"
   replicas: 1
   resources: { }
     # If you do want to specify resources, uncomment the following
@@ -331,7 +331,7 @@ frontend:
   # This fork publishes the Vue 3 console to GitHub Container Registry because the
   # Docker Hub `kubecube/frontend` repository is not writable from this workspace.
   # Pin a `sha-<commit>` tag for a release; `latest` is rebuilt on every push.
-  image: "ghcr.io/bjgym/kubecube-front:sha-4b0e3dc8dea05720a77ba6e142721fbb48cf018c"
+  image: "ghcr.io/bjgym/kubecube-front:sha-ee0c3c627d399db3a71c0b5aa770174ab6775e99"
   # The pull policy is fixed to IfNotPresent, as for every other component.
   replicas: 1
   resources: { }

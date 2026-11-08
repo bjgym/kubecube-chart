@@ -49,6 +49,12 @@
   this rule the session opens and immediately closes with a 403
 
 ## BugFix
+- fix the CloudShell session end to end. The pivot fallback now uses the
+  in-cluster REST config, the webconsole accepts the current account from the
+  frontend, the chart grants the webconsole `pods/exec` on the platform
+  namespace, and the chroot script resolves the jail user to numeric ids before
+  entering it. The frontend and CloudShell image pins move to the commits that
+  carry these fixes
 - name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.
   `rancher-metrics-server:v0.4.1-m` publishes only amd64, so on an arm64 node the
   kubelet cannot resolve the manifest list, takes the image for absent, tries to
