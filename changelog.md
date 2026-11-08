@@ -31,7 +31,9 @@
   images without moving the other components. This fork publishes it to
   `ghcr.io/bjgym/kubecube-front` because the Docker Hub `kubecube/frontend`
   repository is not writable from this workspace; the default is pinned to a
-  `sha-<commit>` tag, not `latest`
+  `sha-<commit>` tag, not `latest`. The pinned tag tracks the console release that
+  contains the density, responsive table, single-source policy and lazy-loading
+  changes
 
 ## BugFix
 - name the metrics-server image after the upstream it is: `metrics-server:v0.7.2`.
