@@ -103,6 +103,8 @@ helm install warden -n kubecube-system --create-namespace ./kubecube-chart -f ./
 
 A member cluster that enables `componentsEnable.cloudshell` runs its own cloud shell, and that shell fetches the user's kubeconfig from the pivot at `https://<global.nodeIP>:30443`. Set `nodeIP` to the pivot's control-plane node IP and make that NodePort reachable from the member cluster. The pivot's own cloud shell reaches cube through its Service and needs neither.
 
+`cloudshell.image` overrides the CloudShell image with a full reference. The default value points at the multi-arch image published from `kubecube-webconsole` by the `publish-cloudshell-image` workflow; an empty value falls back to `global.hub.registry/global.hub.project/global.images.cloudshell` for installs that mirror the upstream image.
+
 ## Upgrading from a release that installed HNC
 
 This chart no longer installs HNC. Helm deletes only what it still renders, so an
