@@ -49,6 +49,9 @@
   this rule the session opens and immediately closes with a 403
 
 ## BugFix
+- remove the duplicate area-switch action from the header. 工作空间, 资源控制台
+  and 运维管理 are owned by the sidebar; the header now carries only the current
+  area title and account actions
 - make the three console areas explicit in the sidebar: 工作空间, 资源控制台 and,
   for manager roles, 运维管理. The workspace overview and resource pages now have
   distinct titles, returning from platform administration lands on 工作空间, and

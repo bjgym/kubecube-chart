@@ -331,7 +331,7 @@ frontend:
   # This fork publishes the Vue 3 console to GitHub Container Registry because the
   # Docker Hub `kubecube/frontend` repository is not writable from this workspace.
   # Pin a `sha-<commit>` tag for a release; `latest` is rebuilt on every push.
-  image: "ghcr.io/bjgym/kubecube-front:sha-b8e9a01fb248390131ee367d2afb1ce403a41fb4"
+  image: "ghcr.io/bjgym/kubecube-front:sha-da597c74c3129e1bdf2576d562d8102acf1edf93"
   # The pull policy is fixed to IfNotPresent, as for every other component.
   replicas: 1
   resources: { }
