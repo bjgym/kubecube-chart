@@ -49,6 +49,10 @@
   this rule the session opens and immediately closes with a 403
 
 ## BugFix
+- keep the resource-console sidebar on the workspace landing page. Switching
+  from 运维管理 to 资源控制台 starts at `/namespace`, which used to be the one
+  console route without navigation; the page now renders the same sidebar as the
+  rest of the console
 - fix the CloudShell session end to end. The pivot fallback now uses the
   in-cluster REST config, the webconsole accepts the current account from the
   frontend, the chart grants the webconsole `pods/exec` on the platform
