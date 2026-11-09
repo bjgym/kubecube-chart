@@ -49,14 +49,20 @@
   this rule the session opens and immediately closes with a 403
 
 ## BugFix
-- remove the duplicate area-switch action from the header. 工作空间, 资源控制台
+- make workspace scope changes transactional. The console now navigates to the
+  target scope first and commits URL and store only after the router guard
+  accepts, so cancelling a dirty-editor prompt leaves both the edit target and
+  the current scope unchanged; details return to the same resource list.
+  CloudShell labels are pinned to the scope captured when the session opened,
+  and `/namespace` is labelled 空间总览 while the selector is 当前工作空间
+- remove the duplicate area-switch action from the header. 空间总览, 资源控制台
   and 运维管理 are owned by the sidebar; the header now carries only the current
   area title and account actions
-- make the three console areas explicit in the sidebar: 工作空间, 资源控制台 and,
-  for manager roles, 运维管理. The workspace overview and resource pages now have
-  distinct titles, returning from platform administration lands on 工作空间, and
+- make the three console areas explicit in the sidebar: 空间总览, 资源控制台 and,
+  for manager roles, 运维管理. The space overview and resource pages now have
+  distinct titles, returning from platform administration lands on 空间总览, and
   the resource-console landing follows the monitoring feature flag
-- keep the resource-console sidebar on the workspace landing page. Switching
+- keep the resource-console sidebar on the space overview. Switching
   from 运维管理 to 资源控制台 starts at `/namespace`, which used to be the one
   console route without navigation; the page now renders the same sidebar as the
   rest of the console

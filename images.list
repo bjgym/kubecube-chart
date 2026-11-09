@@ -1,7 +1,7 @@
 docker.io/kubecube/audit:v1.2.0
 ghcr.io/bjgym/kubecube-cloudshell:sha-3e33370a99420a14b66d81824f8c0372c9ec2b91
 docker.io/kubecube/webconsole:v1.3.0
-ghcr.io/bjgym/kubecube-front:sha-da597c74c3129e1bdf2576d562d8102acf1edf93
+ghcr.io/bjgym/kubecube-front:sha-e5d40e9ad3267fc0f80298e54e1933ea86561208
 docker.io/kubecube/cube:v1.8.2
 docker.io/kubecube/warden:v1.8.2
 docker.io/kubecube/warden-init:v1.8.2
