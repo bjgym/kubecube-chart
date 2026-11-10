@@ -49,6 +49,10 @@
   this rule the session opens and immediately closes with a 403
 
 ## BugFix
+- serialize consecutive workspace scope changes. A cluster switch commits its
+  URL before the new namespace list is available; a following namespace change
+  now waits for that scope to finish applying and the selectors stay disabled
+  during the transition, instead of computing the next target from stale state
 - make workspace scope changes transactional. The console now navigates to the
   target scope first and commits URL and store only after the router guard
   accepts, so cancelling a dirty-editor prompt leaves both the edit target and
