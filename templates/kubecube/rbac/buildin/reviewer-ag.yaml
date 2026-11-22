@@ -930,6 +930,16 @@ rules:
       - get
       - list
       - watch
+  # Same read as the platform admin, so the reviewer sees a verified netmgmt
+  # coverage instead of an unknown Cilium profile. The reviewer changes nothing.
+  - apiGroups:
+      - "*" #crd.cilium.io
+    resources:
+      - ciliumnodeconfigs
+    verbs:
+      - get
+      - list
+      - watch
   - apiGroups:
       - "*" #crd.projectcalico.org
     resources:

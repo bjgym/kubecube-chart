@@ -78,6 +78,15 @@
   with `subPath` and would otherwise never reach a running pod
 
 ## BugFix
+- grant the platform admin and the reviewer read-only (`get`/`list`/`watch`)
+  access to `ciliumnodeconfigs.cilium.io`. The netmgmt component can only
+  verify the live Cilium write profile - and therefore only enable writes -
+  when the caller can read `CiliumNodeConfig` and rule out a per-node override
+  of `enable-policy`/`enable-k8s-networkpolicy`. With the narrower Cilium grant
+  the profile reads `unknown` and every write stays disabled, which is the
+  plan's conservative rule but not what the built-in administrator is supposed
+  to hit. The rule is read-only because the platform verifies this cluster
+  configuration instead of changing it; netmgmt itself still creates no RBAC
 - make `hack/verify-images.sh` resolve a component's full-reference image
   override before comparing against `images.list`. `frontend.image` and
   `cloudshell.image` name a ghcr reference, so the check compared the unused
