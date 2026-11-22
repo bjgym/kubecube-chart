@@ -16,6 +16,12 @@ spec:
       labels:
         kubecube.io/app: frontend
         app: frontend
+      annotations:
+        # The nginx configuration is mounted with subPath, so a ConfigMap update
+        # never reaches a running pod. Rolling the pod when the rendered
+        # ConfigMap changes is what actually applies a new proxy route or TLS
+        # setting.
+        checksum/nginx-config: {{ include (print $.Template.BasePath "/frontend/nginx-configmap.yaml") . | sha256sum }}
     spec:
       {{- with .Values.frontend.nodeSelector }}
       nodeSelector:
@@ -39,10 +45,19 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.frontend.resources | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 80
+            {{- if .Values.frontend.tls.enabled }}
+            - name: https
+              containerPort: 443
+            {{- end }}
           lifecycle:
             preStop:
               exec:
                 command: ["/usr/sbin/nginx","-s","quit"]
+          # The probes stay on HTTP port 80 on purpose: when TLS is enabled the
+          # HTTP server keeps serving /healthz and redirects every other path.
           livenessProbe:
             httpGet:
               path: /healthz
@@ -59,6 +74,11 @@ spec:
             - name: nginx-config
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
+            {{- if .Values.frontend.tls.enabled }}
+            - name: frontend-tls
+              mountPath: /etc/nginx/tls
+              readOnly: true
+            {{- end }}
       volumes:
         - name: nginx-config
           configMap:
@@ -66,5 +86,16 @@ spec:
             items:
               - key: nginx.conf
                 path: nginx.conf
+        {{- if .Values.frontend.tls.enabled }}
+        # Operator-provided browser certificate. The chart never creates it.
+        - name: frontend-tls
+          secret:
+            secretName: {{ required "frontend.tls.secretName must be set when frontend.tls.enabled is true" .Values.frontend.tls.secretName }}
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key
+        {{- end }}
 ---
 {{- end }}

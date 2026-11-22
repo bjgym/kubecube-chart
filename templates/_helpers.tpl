@@ -84,3 +84,28 @@ caBundle: {{ print "{{ ca_crt }}" }}
 caBundle: {{ required "global.certs.custom.caCrt must be set when global.certs.mode is custom" .Values.global.certs.custom.caCrt | b64enc }}
 {{- end }}
 {{- end -}}
+
+{{/*
+The cube endpoint netmgmt talks to. An empty netmgmt.cubeURL means the cube
+Service of the release namespace on its secure port; the process always speaks
+verified HTTPS to cube and has no plaintext fallback.
+*/}}
+{{- define "kubecube.netmgmtCubeURL" -}}
+{{- default (printf "https://kubecube.%s.svc.cluster.local:%v" (include "kubecube.namespace" .) .Values.kubecube.args.securePort) .Values.netmgmt.cubeURL -}}
+{{- end -}}
+
+{{/*
+The TLS server name netmgmt verifies cube's certificate with. It defaults to the
+host of the rendered cube URL because a port is never part of a certificate
+name, and cube's auto-generated certificate is issued for
+*.<namespace>.svc.cluster.local.
+*/}}
+{{- define "kubecube.netmgmtCubeTLSServerName" -}}
+{{- if .Values.netmgmt.cubeTLSServerName -}}
+{{- .Values.netmgmt.cubeTLSServerName -}}
+{{- else -}}
+{{- $url := include "kubecube.netmgmtCubeURL" . | trim -}}
+{{- $host := regexReplaceAll "^[a-zA-Z][a-zA-Z0-9+.-]*://" $url "" -}}
+{{- regexReplaceAll "[:/].*$" $host "" -}}
+{{- end -}}
+{{- end -}}

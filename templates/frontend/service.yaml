@@ -1,4 +1,7 @@
 {{- if eq .Values.global.componentsEnable.frontend "true" }}
+{{- if and .Values.frontend.tls.enabled (eq (int .Values.frontend.tls.httpsNodePort) 30443) }}
+{{- fail "frontend.tls.httpsNodePort must not be 30443: kubecube-nodeport already publishes its HTTPS port there" }}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,5 +16,11 @@ spec:
       port: 80
       targetPort: 80
       nodePort: 30080
+    {{- if .Values.frontend.tls.enabled }}
+    - name: https
+      port: 443
+      targetPort: 443
+      nodePort: {{ .Values.frontend.tls.httpsNodePort }}
+    {{- end }}
 ---
 {{- end }}

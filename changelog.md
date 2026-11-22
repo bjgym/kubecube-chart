@@ -47,8 +47,42 @@
   through a namespaced Role and RoleBinding. The pivot CloudShell is a pod in
   that namespace and the webconsole reaches it with its own identity; without
   this rule the session opens and immediately closes with a 403
+- add the network management component behind
+  `global.componentsEnable.netmgmt`, off by default. Its ServiceAccount,
+  Deployment and Service render only when both `netmgmt` and `kubecube` are
+  enabled, so a member cluster never gets them even if its values turn the
+  component on. The pod gets no Kubernetes identity: the ServiceAccount and the
+  pod disable token automounting, no Role/RoleBinding/ClusterRole/ClusterRoleBinding
+  or Secret is created, and the only mount is cube's `ca.crt` at
+  `/etc/cube-tls/ca.crt` (never `tls.key`, never a kubeconfig). It talks to cube
+  over verified HTTPS (`CUBE_URL`, `CUBE_CA_FILE`, `CUBE_TLS_SERVER_NAME`) and
+  its Service is cluster-internal only
+- add the console nginx route `^~ /api/v1/netmgmt/` with the full
+  `netmgmt.<namespace>.svc.cluster.local:8080` upstream, a per-request
+  `kube-dns` resolver, `proxy_pass $upstream$request_uri` and
+  `Host`/`X-Forwarded-Host`/`X-Forwarded-Proto` from the browser request. The
+  upstream is a variable, so nginx starts, passes `nginx -t` and serves every
+  other route while the component's Service does not exist
+- terminate browser TLS in the console nginx: `frontend.tls.enabled`,
+  `frontend.tls.secretName` and `frontend.tls.httpsNodePort` (30444; 30443 is
+  already `kubecube-nodeport`'s HTTPS port) render an HTTPS server and an HTTP
+  80 redirect that keeps `location = /healthz` served directly, so the HTTP
+  liveness/readiness probes keep working. On the HTTPS server both
+  `/api/v1/cube/` and `/api/v1/netmgmt/` force `Secure` on the `Authorization`
+  `Set-Cookie` while leaving its `HttpOnly`/`SameSite` attributes as sent, so
+  alternating between the console and the component cannot downgrade the
+  session cookie
+- publish `data.netmgmt` in `kubecube-feature-config`, so the console hides the
+  component's tab and page when it is off, and add a `checksum/nginx-config`
+  annotation to the frontend Deployment because the nginx ConfigMap is mounted
+  with `subPath` and would otherwise never reach a running pod
 
 ## BugFix
+- make `hack/verify-images.sh` resolve a component's full-reference image
+  override before comparing against `images.list`. `frontend.image` and
+  `cloudshell.image` name a ghcr reference, so the check compared the unused
+  `global.images` fallbacks against the list and reported both images missing on
+  a correct chart; it now checks the reference the chart actually deploys
 - serialize consecutive workspace scope changes. A cluster switch commits its
   URL before the new namespace list is available; a following namespace change
   now waits for that scope to finish applying and the selectors stay disabled
@@ -113,6 +147,25 @@
   and names itself instead of rendering an empty Secret
 
 ## Upgrade
+- the network management component is opt-in. Enabling it is one step -
+  `global.componentsEnable.netmgmt: "true"` and an image in
+  `global.images.netmgmt`/`images.list` - but turning it off is only the
+  component rollback: NetworkPolicies it created, updated or deleted stay in
+  effect, because v1 does not version policies on the server and offers no
+  automatic undo. Treat "disable the component" and "restore the policies" as
+  two separate steps, using `writeResultUID`/`writeResultResourceVersion` from
+  the write responses.
+- install scope in v1: an online install pre-pulls every line of `images.list`,
+  so the netmgmt image is pulled even while the component is off and an image
+  that cannot be pulled fails the installation. An offline bundle does not pick
+  the chart's `images.list` up automatically, so enabling the component offline
+  is out of scope until the image is added to the offline packaging flow.
+- the console's HTTP NodePort 30080 is development/experimental only. For a
+  production install set `frontend.tls.enabled: true` and
+  `frontend.tls.secretName` to a Secret in the release namespace carrying a
+  browser-trusted `tls.crt`/`tls.key`; the browser then uses
+  `https://<nodeIP>:30444`. The HTTP port still answers `/healthz` for the
+  probes and redirects every other path.
 - this release does not remove the HNC deployment an earlier release installed:
   helm only deletes what it still renders, so the old manager, its webhooks and
   its CRDs survive an upgrade and keep intercepting writes. Delete the

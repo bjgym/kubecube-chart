@@ -32,6 +32,10 @@ global:
     webconsole: "true"
     cloudshell: "true"
     frontend: "true"
+    # The network management component. It is a pivot-side singleton that talks
+    # to cube, so it is rendered only where kubecube is enabled; a member cluster
+    # never gets it even if this value is set to "true" by mistake.
+    netmgmt: "false"
 
   # imagePullSecrets for all pods
   imagePullSecrets: [ ]
@@ -98,6 +102,7 @@ global:
     audit: audit:v1.2.0
     webconsole: webconsole:v1.3.0
     cloudshell: cloudshell:v1.2.6
+    netmgmt: netmgmt:v0.1.0
     ingressController: ingress-nginx-controller:v1.2.0
     ingressControllerJob: ingress-nginx-kube-webhook-certgen:v1.1.1
     localPathStorageProvisioner: rancher-local-path-provisioner:v0.0.19-m
@@ -334,6 +339,16 @@ frontend:
   image: "ghcr.io/bjgym/kubecube-front:sha-67f97500751fb89d06a7dbe69c7f41489a326104"
   # The pull policy is fixed to IfNotPresent, as for every other component.
   replicas: 1
+  # Browser TLS terminates at this nginx. The HTTP NodePort 30080 exists for
+  # development and experiments only; a production install must set enabled.
+  # When enabled the Deployment mounts the named Secret and the Service exposes
+  # httpsNodePort; operation must provide a browser-trusted certificate in that
+  # Secret under tls.crt/tls.key.
+  tls:
+    enabled: false
+    secretName: ""
+    # 30443 is already taken by kubecube-nodeport's HTTPS port.
+    httpsNodePort: 30444
   resources: { }
     # If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
@@ -343,6 +358,55 @@ frontend:
   #    requests:
   #      cpu: 100m
   #      memory: 128Mi
+  nodeSelector: { }
+  affinity: { }
+  tolerations:
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+
+# The network management component is rendered only when both
+# global.componentsEnable.kubecube and global.componentsEnable.netmgmt are
+# "true". It is a pivot-side singleton: it calls cube with the caller's
+# credential and has no Kubernetes API access of its own.
+netmgmt:
+  # netmgmt/deployment.yaml
+  # Full image reference override, e.g. a locally loaded build. Empty falls back
+  # to global.hub.registry/global.hub.project/global.images.netmgmt.
+  image: ""
+  replicaCount: 1
+  # Empty renders https://kubecube.<namespace>.svc.cluster.local:<cube secure
+  # port>. cube always gets a verified HTTPS connection; there is no plaintext
+  # fallback and no value that disables certificate verification.
+  cubeURL: ""
+  # Secret carrying cube's ca.crt. Only ca.crt is mounted; tls.key never is.
+  cubeCASecret: cube-tls-secret
+  # Optional TLS server name override; empty takes the host of cubeURL.
+  cubeTLSServerName: ""
+  # The first write profile; verified at runtime, and read-only when it cannot
+  # be verified.
+  policyProfile: cilium-1.16-standard
+  # Bounded analysis worker pool. A full pool answers 503 ANALYSIS_BUSY.
+  maxConcurrentAnalyses: 4
+  # Complete-list algorithm bounds (plan §5.5). Exceeding one is a refusal, not
+  # a silent truncation.
+  listPageSize: 500
+  maxListPages: 100
+  maxListBytes: 33554432
+  maxWorkloadsNamespace: 200
+  maxWorkloadsCluster: 500
+  maxNamespaces: 200
+  analysisTimeoutSeconds: 15
+  resources: { }
+    # If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #    limits:
+  #      cpu: 100m
+  #      memory: 256Mi
+  #    requests:
+  #      cpu: 100m
+  #      memory: 256Mi
   nodeSelector: { }
   affinity: { }
   tolerations:

@@ -1,0 +1,20 @@
+{{- if and (eq .Values.global.componentsEnable.netmgmt "true") (eq .Values.global.componentsEnable.kubecube "true") }}
+# Cluster-internal only: the console's nginx proxies /api/v1/netmgmt/ to this
+# Service, and nothing outside the cluster reaches it directly.
+apiVersion: v1
+kind: Service
+metadata:
+  name: netmgmt
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/app: netmgmt
+spec:
+  type: ClusterIP
+  selector:
+    kubecube.io/app: netmgmt
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+{{- end }}

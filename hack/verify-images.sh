@@ -28,7 +28,10 @@
 # controller tags kept for clusters on older releases - so requiring every line
 # to be derivable would fail on the current, correct file. What is checked is
 # the direction that breaks a deployment: nothing values.yaml declares may be
-# absent from the list.
+# absent from the list. A component that overrides its image with a full
+# reference (frontend.image, cloudshell.image) is checked against that
+# reference, because that is the image the chart deploys and the installer has
+# to pre-pull; the global.images entry it supersedes is not pulled at all.
 #
 # Usage: hack/verify-images.sh [chart-dir]
 
@@ -58,6 +61,34 @@ read_scalar() {
     if [ "${in_block}" = 1 ]; then
       case "${line}" in
         "    ${key}:"*) printf '%s' "${line#*: }"; return 0 ;;
+        "  "*) ;;
+        *) return 1 ;;
+      esac
+    fi
+  done < "${file}"
+  return 1
+}
+
+# read_block_key FILE BLOCK KEY - the value of "  KEY: ..." inside a top-level "BLOCK:"
+# A component with a full-reference image override (frontend.image, cloudshell.image)
+# deploys that reference instead of global.hub + global.images, so the override is what
+# images.list has to contain, not the unused global.images fallback.
+read_block_key() {
+  local file="$1" block="$2" key="$3" in_block=0 line
+  while IFS= read -r line; do
+    line="${line%$'\r'}"
+    case "${line}" in
+      "${block}:") in_block=1; continue ;;
+    esac
+    if [ "${in_block}" = 1 ]; then
+      case "${line}" in
+        "  ${key}:"*)
+          local value="${line#*: }"
+          value="${value%\"}"
+          value="${value#\"}"
+          printf '%s' "${value}"
+          return 0
+          ;;
         "  "*) ;;
         *) return 1 ;;
       esac
@@ -108,7 +139,13 @@ while IFS= read -r entry; do
   esac
   key="${entry%%:*}"
   value="${entry#*: }"
-  ref="${registry}/${project}/${value}"
+  # A full-reference override on the component supersedes global.hub/global.images.
+  override="$(read_block_key "${values}" "${key}" image || true)"
+  if [ -n "${override}" ]; then
+    ref="${override}"
+  else
+    ref="${registry}/${project}/${value}"
+  fi
   checked=$((checked + 1))
 
   found=0
@@ -120,7 +157,7 @@ while IFS= read -r entry; do
   done
 
   if [ "${found}" = 0 ]; then
-    echo "MISSING  global.images.${key} declares ${ref}, which images.list does not contain" >&2
+    echo "MISSING  global.images.${key} resolves to ${ref}, which images.list does not contain" >&2
     status=1
   fi
 done < <(image_entries "${values}")

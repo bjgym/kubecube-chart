@@ -1,0 +1,113 @@
+{{- if and (eq .Values.global.componentsEnable.netmgmt "true") (eq .Values.global.componentsEnable.kubecube "true") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netmgmt
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/app: netmgmt
+spec:
+  replicas: {{ .Values.netmgmt.replicaCount | int }}
+  selector:
+    matchLabels:
+      kubecube.io/app: netmgmt
+  template:
+    metadata:
+      labels:
+        kubecube.io/app: netmgmt
+        app: netmgmt
+    spec:
+      serviceAccountName: netmgmt
+      # The component has no Kubernetes client: every operation is proxied
+      # through cube as the calling user. Do not give it a token.
+      automountServiceAccountToken: false
+      {{- with .Values.netmgmt.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.netmgmt.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.netmgmt.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: netmgmt
+          image: {{ default (printf "%s/%s/%s" .Values.global.hub.registry .Values.global.hub.project .Values.global.images.netmgmt) .Values.netmgmt.image | quote }}
+          imagePullPolicy: IfNotPresent
+          resources:
+          {{- toYaml .Values.netmgmt.resources | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # cube is reached over verified HTTPS. CUBE_TLS_SERVER_NAME is the
+            # name compared against cube's certificate; it defaults to the host
+            # of CUBE_URL.
+            - name: CUBE_URL
+              value: {{ include "kubecube.netmgmtCubeURL" . | quote }}
+            - name: CUBE_CA_FILE
+              value: /etc/cube-tls/ca.crt
+            - name: CUBE_TLS_SERVER_NAME
+              value: {{ include "kubecube.netmgmtCubeTLSServerName" . | quote }}
+            - name: NETMGMT_POLICY_PROFILE
+              value: {{ .Values.netmgmt.policyProfile | quote }}
+            # Helm loads YAML numbers as float64; int64 keeps MAX_LIST_BYTES
+            # from rendering in exponent notation, which the process rejects.
+            - name: NETMGMT_MAX_CONCURRENT_ANALYSES
+              value: {{ .Values.netmgmt.maxConcurrentAnalyses | int64 | quote }}
+            - name: NETMGMT_LIST_PAGE_SIZE
+              value: {{ .Values.netmgmt.listPageSize | int64 | quote }}
+            - name: NETMGMT_MAX_LIST_PAGES
+              value: {{ .Values.netmgmt.maxListPages | int64 | quote }}
+            - name: NETMGMT_MAX_LIST_BYTES
+              value: {{ .Values.netmgmt.maxListBytes | int64 | quote }}
+            - name: NETMGMT_MAX_WORKLOADS_NAMESPACE
+              value: {{ .Values.netmgmt.maxWorkloadsNamespace | int64 | quote }}
+            - name: NETMGMT_MAX_WORKLOADS_CLUSTER
+              value: {{ .Values.netmgmt.maxWorkloadsCluster | int64 | quote }}
+            - name: NETMGMT_MAX_NAMESPACES
+              value: {{ .Values.netmgmt.maxNamespaces | int64 | quote }}
+            - name: NETMGMT_ANALYSIS_TIMEOUT_SECONDS
+              value: {{ .Values.netmgmt.analysisTimeoutSeconds | int64 | quote }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          volumeMounts:
+            # Only cube's CA is mounted. tls.key, the pivot kubeconfig and any
+            # member-cluster kubeconfig stay out of this pod.
+            - name: cube-ca
+              mountPath: /etc/cube-tls
+              readOnly: true
+      volumes:
+        - name: cube-ca
+          secret:
+            secretName: {{ required "netmgmt.cubeCASecret must name the Secret that carries cube's ca.crt" .Values.netmgmt.cubeCASecret }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+---
+{{- end }}

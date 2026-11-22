@@ -4,5 +4,10 @@ kind: ConfigMap
 metadata:
   name: kubecube-feature-config
   namespace: {{ template "kubecube.namespace" . }}
+# The console reads this map through GET /api/v1/cube/extend/feature-config and
+# treats the string "true" (or "enabled") as on. A component that is off here
+# has no console entry and no page policy grant.
+data:
+  netmgmt: {{ and (eq .Values.global.componentsEnable.netmgmt "true") (eq .Values.global.componentsEnable.kubecube "true") | ternary "true" "false" | quote }}
 ---
 {{- end }}

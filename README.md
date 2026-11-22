@@ -151,7 +151,11 @@ necessarily a failure — it is one the platform declined to claim.
 `global.images`. `images.list` is what the installer pre-pulls
 (`kubecube-installer/install_k8s.sh`), so the two must agree: a tag bumped in one
 file and not the other pre-pulls an image the cluster never runs, and an
-air-gapped install cannot recover from that. Check them before changing either:
+air-gapped install cannot recover from that. A component that publishes under a
+different registry overrides its image with a full reference
+(`frontend.image`, `cloudshell.image`); `images.list` then has to carry that
+reference, not the `global.images` entry it supersedes. Check them before
+changing either:
 
 ```console
 hack/verify-images.sh
