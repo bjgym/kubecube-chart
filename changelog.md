@@ -78,6 +78,12 @@
   with `subPath` and would otherwise never reach a running pod
 
 ## BugFix
+- keep nginx redirects relative (`absolute_redirect off`) in the console server blocks. The
+  console is published on NodePorts other than 80/443 (HTTP 30080, HTTPS 30444), and nginx's
+  default absolute redirect drops the port: `GET /` answered `302 Location:
+  https://<host>/public/`, which the browser cannot reach, so opening the console root failed.
+  The redirect to `/public/` and the HTTPS-upgrade redirect (which spells out the external
+  port) both work after the change
 - pin `frontend.image` (and the matching `images.list` line) to the console image
   the publish workflow produced for the host-adapter commit
   `sha-f1f4be1c00056e902eab2fa06f206795f0603909`, so a deployed console actually

@@ -5,6 +5,13 @@ for /healthz and the redirect, HTTPS 443 for everything else - and the proxy
 list must not be maintained twice.
 */}}
 {{- define "kubecube.frontend.locations" -}}
+# Redirects must stay relative: the console may be published on a NodePort other
+# than 80/443 (HTTP 30080, HTTPS 30444), and nginx's default absolute redirect
+# drops the port, sending the browser to https://<host>/public/ which is not
+# served. This also keeps the HTTP->HTTPS upgrade redirect working because that
+# one spells out the external port itself.
+absolute_redirect off;
+
 # The console is served under /public/. Keep the bare root useful instead of
 # returning nginx's default 403.
 location = / {
