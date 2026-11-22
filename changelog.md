@@ -78,6 +78,11 @@
   with `subPath` and would otherwise never reach a running pod
 
 ## BugFix
+- pin `frontend.image` (and the matching `images.list` line) to the console image
+  the publish workflow produced for the host-adapter commit
+  `sha-f1f4be1c00056e902eab2fa06f206795f0603909`, so a deployed console actually
+  carries the network-management tab and loader instead of the previous console
+  build
 - grant the platform admin and the reviewer read-only (`get`/`list`/`watch`)
   access to `ciliumnodeconfigs.cilium.io`. The netmgmt component can only
   verify the live Cilium write profile - and therefore only enable writes -
