@@ -106,6 +106,16 @@ spec:
               value: {{ .Values.mcp.permission.maxKindsPerGrant | int64 | quote }}
             - name: MCP_PERMISSION_MAX_OBJECTS
               value: {{ .Values.mcp.permission.maxObjectsPerGrant | int64 | quote }}
+            # The sandbox the platform builds for a session: which registries a
+            # manifest may name, which image a smoke test may run, and whether the
+            # sandbox may reach anything beyond DNS. An empty registry list means
+            # the platform's own hub, never "anything".
+            - name: MCP_SANDBOX_ALLOWED_REGISTRIES
+              value: {{ join "," (default (list .Values.global.hub.registry) .Values.mcp.sandbox.allowedRegistries) | quote }}
+            - name: MCP_SMOKE_IMAGE
+              value: {{ .Values.mcp.sandbox.smokeImage | quote }}
+            - name: MCP_SANDBOX_ALLOW_EGRESS
+              value: {{ .Values.mcp.sandbox.allowEgress | quote }}
           livenessProbe:
             httpGet:
               path: /healthz

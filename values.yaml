@@ -467,6 +467,7 @@ mcp:
     # Empty allowedRegistries means the handler only allows global.hub.
     allowEgress: false
     allowedRegistries: []
+    smokeImage: busybox:1.36
     defaultQuotaCap: {}
   permission:
     maxGrantsPerSession: 32

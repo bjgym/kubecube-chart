@@ -88,6 +88,22 @@ rules:
   - apiGroups: [""]
     resources: [resourcequotas]
     verbs: [create, get, list, watch, update, patch, delete]
+  # What a sandbox needs beside the quota: a default and a ceiling per container,
+  # and a policy that denies traffic rather than leaving it open. Create only
+  # would make a retry after a partial failure collide with its own first
+  # attempt, so get and list come with it.
+  - apiGroups: [""]
+    resources: [limitranges]
+    verbs: [create, get, list]
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [create, get, list]
+  # The one question the platform asks before a session turns Ready: may its own
+  # owner write inside the namespace that was just made for it? A
+  # SubjectAccessReview is a create-only, read-nothing call.
+  - apiGroups: [authorization.k8s.io]
+    resources: [subjectaccessreviews]
+    verbs: [create]
 
   # The platform's views over the member. The informer-backed reads need watch
   # as well as list, or the caches behind them never sync.
