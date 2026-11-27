@@ -127,6 +127,20 @@ location ^~ /api/v1/netmgmt/ {
     {{- end }}
 }
 
+# The agent MCP endpoint. Clients reach it through this nginx only: the HTTPS
+# NodePort is the single external entry, so /mcp inherits its TLS termination and
+# there is no second certificate or Ingress to keep in step. The route exists
+# only when the component is on; the timeout must stay above the platform's
+# 25s bounded wait.
+{{- if and (eq .Values.global.componentsEnable.mcp "true") (eq .Values.global.componentsEnable.kubecube "true") }}
+location ^~ /mcp {
+    proxy_pass http://kubecube-mcp;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_read_timeout 300s;
+}
+{{- end }}
+
 location / {
     root /usr/share/nginx/html/public;
     index index.html index.htm;
@@ -165,6 +179,14 @@ data:
         upstream webconsole {
             server webconsole:9081;
         }
+        {{- if and (eq .Values.global.componentsEnable.mcp "true") (eq .Values.global.componentsEnable.kubecube "true") }}
+
+        # The agent MCP endpoint. Declared only when the component is on, so an
+        # install without it never resolves the name.
+        upstream kubecube-mcp {
+            server kubecube-mcp:8090;
+        }
+        {{- end }}
 
         log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
                           '$status $body_bytes_sent "$http_referer" '

@@ -36,6 +36,12 @@ global:
     # to cube, so it is rendered only where kubecube is enabled; a member cluster
     # never gets it even if this value is set to "true" by mistake.
     netmgmt: "false"
+    # The agent MCP endpoint. It controls the MCP Deployment, Service and
+    # NetworkPolicy and the console nginx `/mcp` route; the app.kubecube.io CRDs
+    # and the platform APIs are part of M1 and always on. The signing Secret and
+    # cube's reference to it are rendered whenever kubecube is enabled, so cube
+    # can start in the default (off) state.
+    mcp: "false"
 
   # imagePullSecrets for all pods
   imagePullSecrets: [ ]
@@ -103,6 +109,7 @@ global:
     webconsole: webconsole:v1.3.0
     cloudshell: cloudshell:v1.2.6
     netmgmt: netmgmt:v0.1.0
+    mcp: mcp:v0.1.0
     ingressController: ingress-nginx-controller:v1.2.0
     ingressControllerJob: ingress-nginx-kube-webhook-certgen:v1.1.1
     localPathStorageProvisioner: rancher-local-path-provisioner:v0.0.19-m
@@ -407,6 +414,70 @@ netmgmt:
   #    requests:
   #      cpu: 100m
   #      memory: 256Mi
+  nodeSelector: { }
+  affinity: { }
+  tolerations:
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+
+# The agent MCP endpoint. It is rendered only when both
+# global.componentsEnable.kubecube and global.componentsEnable.mcp are "true".
+# The component holds no cluster credential: every tool calls the platform API
+# with the session token it was given, and only the transport-level subset of
+# MCP is served here.
+mcp:
+  # mcp/deployment.yaml
+  # One replica in v1: the rate limiter and the bounded-wait registry are
+  # in-process state, so a second replica would not share them.
+  replicas: 1
+  args:
+    bindAddress: ":8090"
+    # The platform endpoint the tools call. `<ns>` is replaced with the release
+    # namespace; the default therefore renders
+    # https://kubecube.<namespace>.svc:7443, cube's verified HTTPS port.
+    platformURL: "https://kubecube.<ns>.svc:7443"
+    # A bounded wait may hold one request open for at most 25s. It has to stay
+    # below the nginx/apiserver write timeouts in front of the platform.
+    awaitTimeoutSeconds: 25
+    # Per-session call budget (process-wide token bucket in v1).
+    rateLimitRps: 5
+    rateLimitBurst: 10
+    # cube-side default session lifetime, in seconds, when the group does not
+    # ask for less. The hard ceiling is 8h and comes from the group object.
+    defaultSessionTTLSeconds: 7200
+  # The signing key the chart creates when it is missing (lookup keeps an
+  # existing value across upgrades). Both cube and kubecube-mcp read the same
+  # key: cube signs and verifies session tokens, the MCP surface verifies them
+  # locally.
+  tokenSecret:
+    secretName: kubecube-mcp-token
+    key: mcpTokenSecret
+  resources: { }
+    # If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #    limits:
+  #      cpu: 100m
+  #      memory: 128Mi
+  #    requests:
+  #      cpu: 100m
+  #      memory: 128Mi
+  sandbox:
+    # Empty allowedRegistries means the handler only allows global.hub.
+    allowEgress: false
+    allowedRegistries: []
+    defaultQuotaCap: {}
+  permission:
+    maxGrantsPerSession: 32
+    maxNamespacesPerGrant: 8
+    maxKindsPerGrant: 20
+    maxObjectsPerGrant: 200
+    requestTTL: 1h
+    maxPendingRequestsPerSession: 3
+    autoApproveCovered: true
+  requests:
+    maxAwaitPerSession: 1
   nodeSelector: { }
   affinity: { }
   tolerations:

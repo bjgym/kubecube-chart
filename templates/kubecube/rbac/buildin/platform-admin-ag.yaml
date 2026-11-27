@@ -1324,6 +1324,64 @@ rules:
       - deletecollection
       - patch
       - update
+  # The agent MCP objects (agent-mcp plan D6). Platform administration creates
+  # and manages them across the platform, including their status subresources.
+  - apiGroups:
+      - "*" #app.kubecube.io
+    resources:
+      - resourcegroups
+      - resourcegroups/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - agentsessions
+      - agentsessions/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - changerequests
+      - changerequests/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - agentpermissions
+      - agentpermissions/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
   ### KubeCube dependence resource bellow
   - apiGroups:
       - "*"  #monitoring.kubecube.io

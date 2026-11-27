@@ -78,12 +78,20 @@ rules:
   - apiGroups: [extension.kubecube.io]
     resources: [externalresources]
     verbs: [create, delete, get, list, patch, update, watch]
-  # app.kubecube.io is deliberately absent. resourcegroups, agentsessions and
-  # changerequests were granted here for a feature that was declared but never
-  # finished: the chart publishes no such CRD, no controller reconciles them, and the
-  # permission catalogue's two items for them are gone as well. Granting a group the
-  # cluster does not serve is surface without a purpose; restore these rules together
-  # with the CRD and the reconcilers, not before.
+  # The agent MCP objects. cube is their controller: it watches every one of
+  # them, writes them, and owns their status and finalizers, so each of the five
+  # types carries the full object verbs plus the two subresources. Secrets are
+  # not among them: an agent surface never reads a Secret, and this rule set is
+  # also the platform's own credential boundary.
+  - apiGroups: [app.kubecube.io]
+    resources: [agentpermissions, agentsessions, changerequests, permissionrequests, resourcegroups]
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [app.kubecube.io]
+    resources: [agentpermissions/status, agentsessions/status, changerequests/status, permissionrequests/status, resourcegroups/status]
+    verbs: [get, patch, update]
+  - apiGroups: [app.kubecube.io]
+    resources: [agentpermissions/finalizers, agentsessions/finalizers, changerequests/finalizers, permissionrequests/finalizers, resourcegroups/finalizers]
+    verbs: [update]
 
   # Namespaces: a tenant's, a project's and a space's are created here, labelled
   # here and adopted here. The platform also watches every namespace, which is

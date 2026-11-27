@@ -110,5 +110,29 @@ webhooks:
         resources:
           - tenants
     sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
+      service:
+        name: warden
+        namespace: {{ template "kubecube.namespace" . }}
+        port: 8443
+        path: /warden-validate-app-kubecube-io-v1-agent-write
+    failurePolicy: Ignore
+    name: vagentwrite.kubecube.io
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - "*"
+    sideEffects: None
+    timeoutSeconds: 3
 ---
 {{- end -}}

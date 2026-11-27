@@ -843,6 +843,27 @@ rules:
       - get
       - list
       - watch
+  # The agent MCP objects a reviewer decides: permission requests. Approving or
+  # rejecting patches the request's status, so the subresource carries the write
+  # verbs and the object itself carries the read ones.
+  - apiGroups:
+      - "*" #app.kubecube.io
+    resources:
+      - permissionrequests
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "*"
+    resources:
+      - permissionrequests/status
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - update
   ### KubeCube dependence resource bellow
   - apiGroups:
       - "*"  #monitoring.kubecube.io

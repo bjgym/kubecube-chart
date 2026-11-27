@@ -1,0 +1,46 @@
+{{- if and (eq .Values.global.componentsEnable.mcp "true") (eq .Values.global.componentsEnable.kubecube "true") }}
+# The MCP endpoint is reached only through the console's nginx, which terminates
+# the browser TLS and proxies `/mcp`; the component has no other ingress. Egress
+# is limited to cube's HTTPS port and to DNS, so a compromised MCP pod cannot
+# reach member clusters or arbitrary services.
+#
+# A NetworkPolicy is inert on a cluster without a CNI that enforces it. The chart
+# still renders it there: the object is the declared intent, and enforcing it is
+# the CNI's job.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubecube-mcp
+  namespace: {{ template "kubecube.namespace" . }}
+  labels:
+    kubecube.io/app: kubecube-mcp
+spec:
+  podSelector:
+    matchLabels:
+      kubecube.io/app: kubecube-mcp
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              kubecube.io/app: frontend
+      ports:
+        - protocol: TCP
+          port: 8090
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              kubecube.io/app: kubecube
+      ports:
+        - protocol: TCP
+          port: {{ .Values.kubecube.args.securePort | int }}
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+{{- end }}

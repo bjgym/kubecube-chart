@@ -59,16 +59,31 @@ data:
       olm.manage:
         resources: "catalogsources;packagemanifests;clusterserviceversions;operatorgroups;subscriptions;installplans"
         levels: [platform, tenant, project]
-      # resourcegroups.manage and resourcegroups.scope were declared here ahead of
-      # the feature that would evaluate them, and are removed rather than kept
-      # unchecked. Nothing in a deployment can honour them: the chart installs no
-      # app.kubecube.io CRD, no built-in role grants resourcegroups,
-      # resourcegroups/status or resourcegroups/members, and the string
-      # `resourcegroups/members` is evaluated nowhere in the code. An item here is
-      # a checkbox the console offers, so an item nothing can honour is a promise
-      # the permission page cannot keep — and a custom role could still tick it and
-      # be written rules for an API the cluster does not serve. Put them back
-      # together with the CRD and the evaluation, not before.
+      # The agent MCP authorization items (agent-mcp plan D6). The five
+      # app.kubecube.io CRDs, the reconcilers that evaluate them and these items
+      # land together: the catalogue is the console's list of grantable
+      # permissions, so it only names a permission once the deployment can honour
+      # it. resourcegroups.scope and agentpermissions.review stay off the platform
+      # level — declaring group members is a tenant/project act, and reviewing a
+      # permission request is a human act — and an agent subject holds neither.
+      resourcegroups.manage:
+        resources: "resourcegroups;resourcegroups/status"
+        levels: [platform, tenant, project]
+      resourcegroups.scope:
+        resources: "resourcegroups/members"
+        levels: [tenant, project]
+      agentsessions.manage:
+        resources: "agentsessions;agentsessions/status"
+        levels: [tenant, project]
+      changerequests.manage:
+        resources: "changerequests;changerequests/status"
+        levels: [tenant, project]
+      agentpermissions.manage:
+        resources: "agentpermissions;agentpermissions/status"
+        levels: [tenant, project]
+      agentpermissions.review:
+        resources: "permissionrequests;permissionrequests/status"
+        levels: [tenant, project]
       #
       # Managing the cluster's own CRDs is the platform's business alone.
       crds.manage:

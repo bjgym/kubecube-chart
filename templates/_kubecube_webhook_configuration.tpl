@@ -123,5 +123,115 @@ webhooks:
         resources:
           - tenants
     sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
+      service:
+        name: kubecube
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
+        path: /validate-app-kubecube-io-v1-resourcegroup
+    failurePolicy: Fail
+    name: vresourcegroup.app.kubecube.io
+    rules:
+      - apiGroups:
+          - app.kubecube.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - resourcegroups
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
+      service:
+        name: kubecube
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
+        path: /validate-app-kubecube-io-v1-agentsession
+    failurePolicy: Fail
+    name: vagentsession.app.kubecube.io
+    rules:
+      - apiGroups:
+          - app.kubecube.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - agentsessions
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
+      service:
+        name: kubecube
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
+        path: /validate-app-kubecube-io-v1-agentpermission
+    failurePolicy: Fail
+    name: vagentpermission.app.kubecube.io
+    rules:
+      - apiGroups:
+          - app.kubecube.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - agentpermissions
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
+      service:
+        name: kubecube
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
+        path: /validate-app-kubecube-io-v1-permissionrequest
+    failurePolicy: Fail
+    name: vpermissionrequest.app.kubecube.io
+    rules:
+      - apiGroups:
+          - app.kubecube.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - permissionrequests
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      {{- include "kubecube.webhook.caBundle" . | nindent 6 }}
+      service:
+        name: kubecube
+        namespace: {{ template "kubecube.namespace" . }}
+        port: {{ .Values.kubecube.args.webhookServerPort }}
+        path: /validate-app-kubecube-io-v1-changerequest
+    failurePolicy: Fail
+    name: vchangerequest.app.kubecube.io
+    rules:
+      - apiGroups:
+          - app.kubecube.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - changerequests
+    sideEffects: None
 ---
 {{- end -}}

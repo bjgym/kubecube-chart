@@ -765,6 +765,92 @@ rules:
       - deletecollection
       - patch
       - update
+  # The agent MCP objects (agent-mcp plan D6). A tenant administrator manages
+  # its tenant's groups, sessions and permission records, declares group
+  # members, and reviews the permission requests its users raise.
+  - apiGroups:
+      - "*" #app.kubecube.io
+    resources:
+      - resourcegroups
+      - resourcegroups/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - resourcegroups/members
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - agentsessions
+      - agentsessions/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - changerequests
+      - changerequests/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - agentpermissions
+      - agentpermissions/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+  - apiGroups:
+      - "*"
+    resources:
+      - permissionrequests
+      - permissionrequests/status
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
   ### KubeCube dependence resource bellow
   - apiGroups:
       - "*"  #monitoring.kubecube.io

@@ -3,6 +3,7 @@ ghcr.io/bjgym/kubecube-cloudshell:sha-3e33370a99420a14b66d81824f8c0372c9ec2b91
 docker.io/kubecube/webconsole:v1.3.0
 ghcr.io/bjgym/kubecube-front:sha-f1f4be1c00056e902eab2fa06f206795f0603909
 docker.io/kubecube/netmgmt:v0.1.0
+docker.io/kubecube/mcp:v0.1.0
 docker.io/kubecube/cube:v1.8.2
 docker.io/kubecube/warden:v1.8.2
 docker.io/kubecube/warden-init:v1.8.2

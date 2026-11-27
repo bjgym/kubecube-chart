@@ -1,0 +1,111 @@
+{{- if and (eq .Values.global.componentsEnable.mcp "true") (eq .Values.global.componentsEnable.kubecube "true") }}
+{{- $namespace := include "kubecube.namespace" . }}
+{{- $secretName := required "mcp.tokenSecret.secretName must name the MCP session-token Secret" .Values.mcp.tokenSecret.secretName }}
+{{- $secretKey := required "mcp.tokenSecret.key must name the token key inside that Secret" .Values.mcp.tokenSecret.key }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubecube-mcp
+  namespace: {{ $namespace }}
+  labels:
+    kubecube.io/app: kubecube-mcp
+spec:
+  replicas: {{ .Values.mcp.replicas | int }}
+  selector:
+    matchLabels:
+      kubecube.io/app: kubecube-mcp
+  template:
+    metadata:
+      labels:
+        kubecube.io/app: kubecube-mcp
+        app: kubecube-mcp
+    spec:
+      serviceAccountName: kubecube-mcp
+      # The component has no Kubernetes client of its own, so a token would only
+      # be a credential to leak. Its authority is the session token a caller
+      # presents, and the platform re-checks it on every tool call.
+      automountServiceAccountToken: false
+      {{- with .Values.mcp.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcp.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mcp.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: kubecube-mcp
+          image: "{{ .Values.global.hub.registry }}/{{ .Values.global.hub.project }}/{{ .Values.global.images.mcp }}"
+          imagePullPolicy: IfNotPresent
+          resources:
+          {{- toYaml .Values.mcp.resources | nindent 12 }}
+          args:
+            - -bind-address={{ .Values.mcp.args.bindAddress }}
+            # `<ns>` in mcp.args.platformURL resolves to the release namespace,
+            # so an override written against another namespace keeps working.
+            - -platform-url={{ .Values.mcp.args.platformURL | replace "<ns>" $namespace }}
+            - -platform-ca=/etc/tls/ca.crt
+          env:
+            # The signing key cube signs session tokens with. The MCP surface
+            # verifies tokens locally against the same key before calling the
+            # platform.
+            - name: MCP_TOKEN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: {{ $secretKey }}
+            # A bounded wait holds one request open for at most 25s.
+            - name: MCP_AWAIT_TIMEOUT_SECONDS
+              value: {{ .Values.mcp.args.awaitTimeoutSeconds | int64 | quote }}
+            # Per-session call budget; in-process state in v1, which is why the
+            # component runs as a single replica.
+            - name: MCP_RATE_LIMIT_RPS
+              value: {{ .Values.mcp.args.rateLimitRps | quote }}
+            - name: MCP_RATE_LIMIT_BURST
+              value: {{ .Values.mcp.args.rateLimitBurst | int64 | quote }}
+          ports:
+            - name: http
+              containerPort: 8090
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8090
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8090
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          volumeMounts:
+            # Only cube's CA. tls.key, the pivot kubeconfig and every member
+            # credential stay out of this pod.
+            - name: cube-ca
+              mountPath: /etc/tls
+              readOnly: true
+      volumes:
+        - name: cube-ca
+          secret:
+            secretName: cube-tls-secret
+            items:
+              - key: ca.crt
+                path: ca.crt
+---
+{{- end }}

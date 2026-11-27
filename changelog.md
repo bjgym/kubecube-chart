@@ -1,6 +1,15 @@
 # v1.8.3
 
 ## Feature
+- ship the agent MCP component behind `global.componentsEnable.mcp` (default
+  `"false"`): the chart creates the `kubecube-mcp-token` Secret with
+  `lookup`+`randAlphaNum` so the signing key survives upgrades and never appears
+  in values, cube and the new `kubecube-mcp` Deployment both read it through
+  `secretKeyRef`, the component runs with a token-less ServiceAccount and a
+  NetworkPolicy that allows only the console's nginx in and cube's HTTPS port
+  out, and the console's nginx exposes `/mcp` on the existing HTTPS NodePort.
+  The app.kubecube.io CRDs and the platform side of the surface are not gated by
+  this switch
 - grant the platform the Cilium CRDs — network policies, cluster-wide network
   policies, endpoints, identities and nodes — beside the calico ones it already
   held. Cilium is the CNI the installer now installs by default, and a member
