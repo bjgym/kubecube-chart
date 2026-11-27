@@ -679,3 +679,1612 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: agentpermissions.app.kubecube.io
+spec:
+  group: app.kubecube.io
+  names:
+    categories:
+    - kubecube
+    kind: AgentPermission
+    listKind: AgentPermissionList
+    plural: agentpermissions
+    singular: agentpermission
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.effect
+      name: Effect
+      type: string
+    - jsonPath: .spec.source
+      name: Source
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .spec.ttl
+      name: Expires
+      type: date
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: AgentPermission is the Schema for the agentpermissions API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AgentPermissionSpec defines the desired state of AgentPermission
+            properties:
+              cluster:
+                description: Cluster the authorized objects live in. One authorization
+                  covers one cluster and the namespaces of one project.
+                type: string
+              effect:
+                description: "PermissionEffect is what an authorization does when
+                  it matches. \n Deny exists as a value rather than as an absence
+                  because a narrower refusal has to be expressible: \"everything this
+                  group holds except this object\" has no allow-only spelling, and
+                  an operator writing one needs a way to say it."
+                enum:
+                - Allow
+                - Deny
+                type: string
+              groupRef:
+                description: GroupRef makes this a group-scoped authorization. A Baseline
+                  is always one of these, and it is evaluated against the group's
+                  live members rather than against a copy taken when the session started.
+                properties:
+                  cluster:
+                    description: Cluster the group's members live in.
+                    type: string
+                  name:
+                    description: Name of the ResourceGroup.
+                    type: string
+                  namespace:
+                    description: Namespace the group and its members live in.
+                    type: string
+                  uid:
+                    description: UID of the ResourceGroup.
+                    type: string
+                required:
+                - cluster
+                - name
+                - namespace
+                - uid
+                type: object
+              namespaces:
+                description: Namespaces the authorization reaches. They must share
+                  the group's tenant and project, and a Baseline carries none because
+                  its members say where it reaches.
+                items:
+                  type: string
+                type: array
+              sessionRef:
+                description: SessionRef makes this a session-scoped authorization.
+                  Exactly one of GroupRef and SessionRef is set.
+                properties:
+                  name:
+                    description: Name of the object.
+                    type: string
+                  namespace:
+                    description: Namespace the object lives in.
+                    type: string
+                  uid:
+                    description: UID of the object.
+                    type: string
+                required:
+                - name
+                - namespace
+                - uid
+                type: object
+              source:
+                description: PermissionSource is where an authorization came from.
+                  A person creates a Manual one, a controller compiles the Baseline
+                  from the group's declared members, and an approved request produces
+                  a Request one. The source is what lets the platform refuse a hand-written
+                  grant the scope rules would never compile, and lets revocation treat
+                  the three differently.
+                enum:
+                - Baseline
+                - Manual
+                - Request
+                type: string
+              target:
+                description: 'PermissionTarget is which objects an authorization covers,
+                  expressed as the conditions a member object satisfies. The conditions
+                  are ANDed: an object must be in the namespace set, of a listed kind,
+                  carry the labels, carry the annotations and be one of the explicit
+                  objects, for every condition that is set. An unset condition constrains
+                  nothing.'
+                properties:
+                  kinds:
+                    description: 'Kinds are fully qualified types, "apps/v1/Deployment"
+                      or "v1/ConfigMap". A kind alone would not identify a type: two
+                      API groups can carry the same kind.'
+                    items:
+                      type: string
+                    type: array
+                  matchAnnotations:
+                    additionalProperties:
+                      type: string
+                    description: MatchAnnotations narrows by annotation, after the
+                      read. Kubernetes has no annotation selector, so a result filtered
+                      this way is marked as filtered rather than claimed to be exact.
+                    type: object
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: MatchLabels narrows by label selector.
+                    type: object
+                  objects:
+                    description: Objects names explicit objects, the most specific
+                      condition there is.
+                    items:
+                      description: 'TargetObject names one object an authorization
+                        or a request is about. Unlike ObjectRef it carries the API
+                        version, because a kind alone does not identify a type: the
+                        same kind can exist in two API groups.'
+                      properties:
+                        apiVersion:
+                          description: APIVersion is the fully qualified version,
+                            for example apps/v1.
+                          type: string
+                        kind:
+                          description: Kind of the object.
+                          type: string
+                        name:
+                          description: Name of the object.
+                          type: string
+                        namespace:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              tools:
+                description: 'Tools is the subset of the group-reading tools this
+                  authorization allows. Sandbox writes and session control are not
+                  authorizable: the first is decided by the session''s mode and the
+                  second belongs to the session itself.'
+                items:
+                  description: "ToolName is one MCP tool a session may be granted.
+                    \n The list is the whole catalogue: a tool a session asks for
+                    but this enum does not carry would be refused by the API server
+                    rather than by the code that checks it, which is the failure worth
+                    avoiding. The names are grouped the way the authorization rules
+                    read them — session control, group reads, sandbox writes, submission
+                    — because a session's allowlist is a subset of this one list whatever
+                    class each name belongs to."
+                  enum:
+                  - list_group_resources
+                  - list_permissions
+                  - describe_group
+                  - request_permission
+                  - get_request
+                  - list_requests
+                  - await_request
+                  - cancel_request
+                  - get_resource
+                  - get_events
+                  - get_logs
+                  - render_member
+                  - validate_change
+                  - list_chart_versions
+                  - sandbox_apply
+                  - sandbox_rollback
+                  - run_smoke_test
+                  - destroy_sandbox
+                  - propose_change
+                  type: string
+                type: array
+              ttl:
+                description: TTL bounds the authorization's life. A request-derived
+                  authorization may not outlive the session that asked for it.
+                type: string
+            required:
+            - cluster
+            - effect
+            - source
+            type: object
+          status:
+            description: AgentPermissionStatus defines the observed state of AgentPermission
+            properties:
+              absorbedBy:
+                description: AbsorbedBy names the wider authorization that covers
+                  this one. Absorption changes what a list shows and what the auto-approval
+                  rule considers; it does not change what this authorization allows.
+                type: string
+              absorbedCount:
+                description: AbsorbedCount is how many narrower authorizations this
+                  one covers.
+                type: integer
+              conditions:
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n \ttype FooStatus struct{ \t    // Represents the observations
+                    of a foo's current state. \t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\" \t    //
+                    +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map
+                    \t    // +listMapKey=type \t    Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields
+                    \t}"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: PermissionPhase is the observed phase of one authorization.
+                enum:
+                - Pending
+                - Active
+                - Expired
+                - Revoked
+                type: string
+              resolved:
+                description: 'PermissionResolved is a preview of what an authorization
+                  covers. It is computed for a reviewer and for audit, and it is never
+                  the basis of a decision: the decision is taken against live objects.'
+                properties:
+                  namespaces:
+                    type: integer
+                  objects:
+                    type: integer
+                  truncated:
+                    description: Truncated says the count stopped at a bound rather
+                      than covering everything that matched.
+                    type: boolean
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: agentsessions.app.kubecube.io
+spec:
+  group: app.kubecube.io
+  names:
+    categories:
+    - kubecube
+    kind: AgentSession
+    listKind: AgentSessionList
+    plural: agentsessions
+    singular: agentsession
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.groupRef.name
+      name: Group
+      type: string
+    - jsonPath: .spec.mode
+      name: Mode
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.expiresAt
+      name: ExpiresAt
+      type: date
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: AgentSession is the Schema for the agentsessions API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AgentSessionSpec defines the desired state of AgentSession
+            properties:
+              groupRef:
+                description: GroupRef is the group the session is scoped to.
+                properties:
+                  cluster:
+                    description: Cluster the group's members live in.
+                    type: string
+                  name:
+                    description: Name of the ResourceGroup.
+                    type: string
+                  namespace:
+                    description: Namespace the group and its members live in.
+                    type: string
+                  uid:
+                    description: UID of the ResourceGroup.
+                    type: string
+                required:
+                - cluster
+                - name
+                - namespace
+                - uid
+                type: object
+              mode:
+                description: Mode is readonly or sandbox.
+                enum:
+                - readonly
+                - sandbox
+                type: string
+              owner:
+                description: SessionOwner is who authorized the session and which
+                  client holds it. Every action a session takes traces back to the
+                  user recorded here.
+                properties:
+                  client:
+                    description: Client is the MCP client the session was issued to.
+                    type: string
+                  user:
+                    description: User is the platform user who authorized the session.
+                    type: string
+                required:
+                - user
+                type: object
+              sandbox:
+                description: SandboxSpec is the disposable environment a session writes
+                  in.
+                properties:
+                  quotaCap:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: QuotaCap caps the sandbox on top of the quota its
+                      namespace carries.
+                    type: object
+                  ttl:
+                    description: TTL is how long the sandbox lives.
+                    type: string
+                type: object
+              tools:
+                description: Tools is the allowlist of MCP tools this session may
+                  call. A tool absent from the list is refused before it reaches the
+                  platform.
+                items:
+                  description: "ToolName is one MCP tool a session may be granted.
+                    \n The list is the whole catalogue: a tool a session asks for
+                    but this enum does not carry would be refused by the API server
+                    rather than by the code that checks it, which is the failure worth
+                    avoiding. The names are grouped the way the authorization rules
+                    read them — session control, group reads, sandbox writes, submission
+                    — because a session's allowlist is a subset of this one list whatever
+                    class each name belongs to."
+                  enum:
+                  - list_group_resources
+                  - list_permissions
+                  - describe_group
+                  - request_permission
+                  - get_request
+                  - list_requests
+                  - await_request
+                  - cancel_request
+                  - get_resource
+                  - get_events
+                  - get_logs
+                  - render_member
+                  - validate_change
+                  - list_chart_versions
+                  - sandbox_apply
+                  - sandbox_rollback
+                  - run_smoke_test
+                  - destroy_sandbox
+                  - propose_change
+                  type: string
+                type: array
+            required:
+            - groupRef
+            - owner
+            type: object
+          status:
+            description: AgentSessionStatus defines the observed state of AgentSession
+            properties:
+              actions:
+                format: int64
+                type: integer
+              conditions:
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n \ttype FooStatus struct{ \t    // Represents the observations
+                    of a foo's current state. \t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\" \t    //
+                    +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map
+                    \t    // +listMapKey=type \t    Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields
+                    \t}"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              expiresAt:
+                description: ExpiresAt is when the session stops being usable. It
+                  is written when the session becomes Ready, because a session that
+                  has no expiry is one no token can safely be issued for.
+                format: date-time
+                type: string
+              lastUsedAt:
+                format: date-time
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: SessionPhase is the observed phase of a session.
+                enum:
+                - Pending
+                - Ready
+                - Expired
+                - Revoked
+                type: string
+              sandboxNamespace:
+                description: 'SandboxNamespace is the namespace the session may write
+                  in. It is not a space: it carries kubecube.io/namespace-level: sandbox,
+                  so the readers that enumerate a project''s spaces never see it.'
+                type: string
+              sandboxNamespaceUID:
+                description: SandboxNamespaceUID binds the session token to one namespace
+                  object, so deleting the namespace and recreating the same name invalidates
+                  the token rather than handing the session a fresh sandbox.
+                type: string
+              smokeTests:
+                description: SmokeTests are the recent smoke tests, newest last. The
+                  list is bounded so the record cannot grow without limit; a receipt
+                  older than the bound is answered as not found rather than kept forever.
+                items:
+                  description: SmokeTestRecord is one smoke test a session ran in
+                    its sandbox. The name is the receipt a caller polls with, so a
+                    record and a receipt cannot disagree about which run they describe.
+                  properties:
+                    commandDigest:
+                      description: CommandDigest is the hash of the command, so a
+                        receipt names exactly what was run rather than something that
+                        was edited afterwards.
+                      type: string
+                    exitCode:
+                      description: ExitCode is the Job's exit code once it finished.
+                      format: int32
+                      type: integer
+                    finishedAt:
+                      format: date-time
+                      type: string
+                    image:
+                      description: Image is the image the Job ran.
+                      type: string
+                    jobName:
+                      description: JobName is the Job created in the sandbox.
+                      type: string
+                    name:
+                      description: Name is the receipt id, st-<hash>.
+                      type: string
+                    phase:
+                      description: Phase is Pending, Succeeded, Failed or Cancelled.
+                      enum:
+                      - Pending
+                      - Succeeded
+                      - Failed
+                      - Cancelled
+                      type: string
+                    startedAt:
+                      format: date-time
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+              tokenJTI:
+                description: TokenJTI is the id of the token currently issued for
+                  this session. A token whose jti is not this value is refused. It
+                  is empty until a token is issued, and cleared when the session is
+                  revoked or its sandbox is replaced.
+                type: string
+              usedQuota:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: ResourceList is a set of (resource name, quantity) pairs.
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: changerequests.app.kubecube.io
+spec:
+  group: app.kubecube.io
+  names:
+    categories:
+    - kubecube
+    kind: ChangeRequest
+    listKind: ChangeRequestList
+    plural: changerequests
+    singular: changerequest
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.groupRef.name
+      name: Group
+      type: string
+    - jsonPath: .spec.sessionRef.name
+      name: Session
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ChangeRequest is the Schema for the changerequests API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ChangeRequestSpec defines the desired state of ChangeRequest
+            properties:
+              argsDigest:
+                description: ArgsDigest is the hash of the normalized arguments. A
+                  retry with the same key but different arguments is a conflict, not
+                  a replay.
+                type: string
+              changeSet:
+                description: ChangeSet is the validated set of manifests a session
+                  proposes to land.
+                properties:
+                  configMapRef:
+                    description: ConfigMapRef names the ConfigMap in that namespace
+                      that holds the normalized manifests.
+                    type: string
+                  digest:
+                    description: Digest is the hash of that content, so a reviewer
+                      approves exactly what was validated rather than whatever the
+                      ConfigMap holds later.
+                    type: string
+                  namespace:
+                    description: Namespace holds the ConfigMap. It is the session's
+                      sandbox rather than the group's namespace, because that is where
+                      the executor records what it applied; a bare name would not
+                      locate it.
+                    type: string
+                  sandboxUID:
+                    description: SandboxUID is the sandbox the manifests were validated
+                      in. It is part of the identity because the same change set name
+                      can exist in another session's sandbox.
+                    type: string
+                required:
+                - configMapRef
+                - digest
+                - namespace
+                type: object
+              evidence:
+                description: "Evidence is what the session proved before asking a
+                  human to land a change. \n It is bound to one change set: the digest
+                  and sandbox UID here must equal the ones on ChangeSet, which is
+                  what stops a reviewer approving one set of manifests while reading
+                  the checks for another."
+                properties:
+                  digest:
+                    description: Digest must equal ChangeSet.Digest.
+                    type: string
+                  dryRun:
+                    description: "EvidenceResult is the outcome of one check the platform
+                      ran while a change was being prepared. \n It is a closed set
+                      rather than a free string because the rules that read it have
+                      to tell \"failed\" from \"never run\": a field nobody filled
+                      in would otherwise read as success, and a reviewer would approve
+                      something nothing checked."
+                    enum:
+                    - passed
+                    - failed
+                    - not-run
+                    type: string
+                  policy:
+                    description: "EvidenceResult is the outcome of one check the platform
+                      ran while a change was being prepared. \n It is a closed set
+                      rather than a free string because the rules that read it have
+                      to tell \"failed\" from \"never run\": a field nobody filled
+                      in would otherwise read as success, and a reviewer would approve
+                      something nothing checked."
+                    enum:
+                    - passed
+                    - failed
+                    - not-run
+                    type: string
+                  quota:
+                    description: EvidenceQuota is the estimated cost of a change against
+                      what the space has left, so an over-budget change is refused
+                      before it is applied.
+                    properties:
+                      delta:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
+                        type: object
+                      remaining:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: ResourceList is a set of (resource name, quantity)
+                          pairs.
+                        type: object
+                    type: object
+                  sandboxUID:
+                    description: SandboxUID must equal ChangeSet.SandboxUID.
+                    type: string
+                  smokeTest:
+                    description: "EvidenceResult is the outcome of one check the platform
+                      ran while a change was being prepared. \n It is a closed set
+                      rather than a free string because the rules that read it have
+                      to tell \"failed\" from \"never run\": a field nobody filled
+                      in would otherwise read as success, and a reviewer would approve
+                      something nothing checked."
+                    enum:
+                    - passed
+                    - failed
+                    - not-run
+                    type: string
+                type: object
+              groupRef:
+                description: 'GroupRef points at one resource group in one cluster.
+                  It carries the UID because that, and not the name, is the scope
+                  key: a name can be deleted and recreated, a UID cannot, so recreating
+                  a name inherits nothing.'
+                properties:
+                  cluster:
+                    description: Cluster the group's members live in.
+                    type: string
+                  name:
+                    description: Name of the ResourceGroup.
+                    type: string
+                  namespace:
+                    description: Namespace the group and its members live in.
+                    type: string
+                  uid:
+                    description: UID of the ResourceGroup.
+                    type: string
+                required:
+                - cluster
+                - name
+                - namespace
+                - uid
+                type: object
+              idempotencyKey:
+                description: IdempotencyKey is the caller's key for this submission.
+                  It is stored so a retry can be recognised and answered with the
+                  recorded request instead of creating a second one.
+                type: string
+              sessionRef:
+                description: SessionRef names the AgentSession that produced the change.
+                  It carries the session UID, so a name deleted and recreated does
+                  not inherit the change requests of the session that held it.
+                properties:
+                  name:
+                    description: Name of the object.
+                    type: string
+                  namespace:
+                    description: Namespace the object lives in.
+                    type: string
+                  uid:
+                    description: UID of the object.
+                    type: string
+                required:
+                - name
+                - namespace
+                - uid
+                type: object
+              summary:
+                description: Summary is what the change does, in the words a reviewer
+                  reads first.
+                maxLength: 200
+                type: string
+            required:
+            - changeSet
+            - groupRef
+            - sessionRef
+            type: object
+          status:
+            description: ChangeRequestStatus defines the observed state of ChangeRequest.
+              The platform never lands a change itself, so Applied means a human landed
+              it through the channel that already owns those resources.
+            properties:
+              approvals:
+                description: Approvals is the ledger. It records who approved and
+                  when; a count would not let the rules answer whether the same person
+                  approved twice.
+                items:
+                  description: ApprovalRecord is one entry in an approval ledger.
+                    A ledger rather than a counter, because the rules have to answer
+                    "may this person approve again" and "are the approvers distinct",
+                    and a count cannot answer either.
+                  properties:
+                    at:
+                      description: At is when the approval was recorded.
+                      format: date-time
+                      type: string
+                    user:
+                      description: User is the platform user who approved.
+                      type: string
+                  required:
+                  - at
+                  - user
+                  type: object
+                type: array
+              conditions:
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n \ttype FooStatus struct{ \t    // Represents the observations
+                    of a foo's current state. \t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\" \t    //
+                    +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map
+                    \t    // +listMapKey=type \t    Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields
+                    \t}"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              landedBy:
+                description: LandedBy records the human who landed the change, once
+                  it is Applied.
+                type: string
+              message:
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: ChangeRequestPhase is the observed phase of a change
+                  request.
+                enum:
+                - Pending
+                - Accepted
+                - Rejected
+                - Applied
+                - Cancelled
+                type: string
+              requester:
+                description: Requester is the session's owner, taken from the session
+                  rather than from the request, because the requester's own approval
+                  never counts.
+                type: string
+              requiredApprovers:
+                description: RequiredApprovers is how many distinct approvers this
+                  change needs. It is computed from the group's environment when the
+                  request is created, and stored so a later environment change does
+                  not silently move the bar for a request already under review.
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: permissionrequests.app.kubecube.io
+spec:
+  group: app.kubecube.io
+  names:
+    categories:
+    - kubecube
+    kind: PermissionRequest
+    listKind: PermissionRequestList
+    plural: permissionrequests
+    singular: permissionrequest
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.sessionRef.name
+      name: Session
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: PermissionRequest is the Schema for the permissionrequests API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: "PermissionRequestSpec defines the desired state of PermissionRequest.
+              \n A request asks for a scope outside what the session already holds.
+              It can only ask for reads and renders: a write is never granted to an
+              agent through this path, so approval can widen what the agent sees and
+              never what it may change."
+            properties:
+              argsDigest:
+                description: ArgsDigest is the hash of the normalized arguments. A
+                  retry with the same key but different arguments is a conflict, not
+                  a replay.
+                type: string
+              idempotencyKey:
+                description: IdempotencyKey is the caller's key for this submission,
+                  so a retry is answered with the recorded request instead of creating
+                  a second one.
+                type: string
+              namespaces:
+                items:
+                  type: string
+                type: array
+              reason:
+                description: 'Reason is why the session needs this scope. It is required:
+                  an approver deciding whether to widen an agent''s reach needs the
+                  agent''s own account of what it is for.'
+                maxLength: 500
+                type: string
+              sessionRef:
+                description: SessionRef is the session asking. It carries the UID,
+                  so a name deleted and recreated does not inherit the requests of
+                  the session that held it.
+                properties:
+                  name:
+                    description: Name of the object.
+                    type: string
+                  namespace:
+                    description: Namespace the object lives in.
+                    type: string
+                  uid:
+                    description: UID of the object.
+                    type: string
+                required:
+                - name
+                - namespace
+                - uid
+                type: object
+              target:
+                description: 'PermissionTarget is which objects an authorization covers,
+                  expressed as the conditions a member object satisfies. The conditions
+                  are ANDed: an object must be in the namespace set, of a listed kind,
+                  carry the labels, carry the annotations and be one of the explicit
+                  objects, for every condition that is set. An unset condition constrains
+                  nothing.'
+                properties:
+                  kinds:
+                    description: 'Kinds are fully qualified types, "apps/v1/Deployment"
+                      or "v1/ConfigMap". A kind alone would not identify a type: two
+                      API groups can carry the same kind.'
+                    items:
+                      type: string
+                    type: array
+                  matchAnnotations:
+                    additionalProperties:
+                      type: string
+                    description: MatchAnnotations narrows by annotation, after the
+                      read. Kubernetes has no annotation selector, so a result filtered
+                      this way is marked as filtered rather than claimed to be exact.
+                    type: object
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: MatchLabels narrows by label selector.
+                    type: object
+                  objects:
+                    description: Objects names explicit objects, the most specific
+                      condition there is.
+                    items:
+                      description: 'TargetObject names one object an authorization
+                        or a request is about. Unlike ObjectRef it carries the API
+                        version, because a kind alone does not identify a type: the
+                        same kind can exist in two API groups.'
+                      properties:
+                        apiVersion:
+                          description: APIVersion is the fully qualified version,
+                            for example apps/v1.
+                          type: string
+                        kind:
+                          description: Kind of the object.
+                          type: string
+                        name:
+                          description: Name of the object.
+                          type: string
+                        namespace:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              tools:
+                description: Tools is the subset of the group-reading tools requested.
+                items:
+                  description: "ToolName is one MCP tool a session may be granted.
+                    \n The list is the whole catalogue: a tool a session asks for
+                    but this enum does not carry would be refused by the API server
+                    rather than by the code that checks it, which is the failure worth
+                    avoiding. The names are grouped the way the authorization rules
+                    read them — session control, group reads, sandbox writes, submission
+                    — because a session's allowlist is a subset of this one list whatever
+                    class each name belongs to."
+                  enum:
+                  - list_group_resources
+                  - list_permissions
+                  - describe_group
+                  - request_permission
+                  - get_request
+                  - list_requests
+                  - await_request
+                  - cancel_request
+                  - get_resource
+                  - get_events
+                  - get_logs
+                  - render_member
+                  - validate_change
+                  - list_chart_versions
+                  - sandbox_apply
+                  - sandbox_rollback
+                  - run_smoke_test
+                  - destroy_sandbox
+                  - propose_change
+                  type: string
+                type: array
+              ttl:
+                type: string
+            required:
+            - reason
+            - sessionRef
+            type: object
+          status:
+            description: PermissionRequestStatus defines the observed state of PermissionRequest
+            properties:
+              approvals:
+                items:
+                  description: ApprovalRecord is one entry in an approval ledger.
+                    A ledger rather than a counter, because the rules have to answer
+                    "may this person approve again" and "are the approvers distinct",
+                    and a count cannot answer either.
+                  properties:
+                    at:
+                      description: At is when the approval was recorded.
+                      format: date-time
+                      type: string
+                    user:
+                      description: User is the platform user who approved.
+                      type: string
+                  required:
+                  - at
+                  - user
+                  type: object
+                type: array
+              conditions:
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n \ttype FooStatus struct{ \t    // Represents the observations
+                    of a foo's current state. \t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\" \t    //
+                    +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map
+                    \t    // +listMapKey=type \t    Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields
+                    \t}"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              grantRef:
+                description: GrantRef is the authorization approval produced.
+                properties:
+                  name:
+                    description: Name of the object.
+                    type: string
+                  namespace:
+                    description: Namespace the object lives in.
+                    type: string
+                  uid:
+                    description: UID of the object.
+                    type: string
+                required:
+                - name
+                - namespace
+                - uid
+                type: object
+              message:
+                type: string
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: PermissionRequestPhase is the observed phase of one permission
+                  request.
+                enum:
+                - Pending
+                - Approved
+                - Rejected
+                - Expired
+                - Cancelled
+                type: string
+              requester:
+                description: Requester is the session's owner, taken from the session
+                  rather than from the request, because the requester's own approval
+                  never counts.
+                type: string
+              requiredApprovers:
+                description: RequiredApprovers is how many distinct approvers this
+                  request needs, stored so a later environment change does not move
+                  the bar for a request already under review.
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  creationTimestamp: null
+  name: resourcegroups.app.kubecube.io
+spec:
+  group: app.kubecube.io
+  names:
+    categories:
+    - kubecube
+    kind: ResourceGroup
+    listKind: ResourceGroupList
+    plural: resourcegroups
+    singular: resourcegroup
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.displayName
+      name: DisplayName
+      type: string
+    - jsonPath: .spec.cluster
+      name: Cluster
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ResourceGroup is the Schema for the resourcegroups API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ResourceGroupSpec defines the desired state of ResourceGroup
+            properties:
+              agent:
+                description: AgentPolicy is what a group allows an agent session to
+                  be.
+                properties:
+                  defaultMode:
+                    allOf:
+                    - enum:
+                      - readonly
+                      - sandbox
+                    - enum:
+                      - readonly
+                      - sandbox
+                    description: DefaultMode is the mode a new session gets when its
+                      owner does not choose one. A prod location defaults to readonly.
+                    type: string
+                  maxSessionTTL:
+                    description: MaxSessionTTL caps the lifetime a session may ask
+                      for.
+                    type: string
+                  sandboxQuotaCap:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: SandboxQuotaCap caps what one sandbox may consume,
+                      on top of the quota its namespace already carries.
+                    type: object
+                type: object
+              cluster:
+                description: Cluster the members live in. One group covers one cluster
+                  and one namespace, which is what keeps its scope expressible as
+                  a label selector.
+                type: string
+              description:
+                maxLength: 200
+                type: string
+              displayName:
+                maxLength: 100
+                minLength: 1
+                type: string
+              scope:
+                description: "Scope narrows which kinds may be declared as members
+                  of this group. \n A kind is written as \"kind\" for the core group
+                  and \"group/kind\" otherwise, the way kubectl spells one, because
+                  the group of apiVersion: v1 is the empty group rather than \"v1\"."
+                properties:
+                  allowedKinds:
+                    description: AllowedKinds, when set, is the only set of kinds
+                      a member may be. Empty means every namespaced kind outside DeniedKinds.
+                    items:
+                      type: string
+                    type: array
+                  deniedKinds:
+                    description: DeniedKinds adds to the built-in denylist, which
+                      already holds PVC, PV, Namespace, CRDs and every cluster-scoped
+                      kind. It can only add.
+                    items:
+                      type: string
+                    type: array
+                type: object
+            required:
+            - cluster
+            type: object
+          status:
+            description: 'ResourceGroupStatus defines the observed state of ResourceGroup.
+              Only cube writes it: the group''s members are created and changed by
+              Helm, CI, operators and the console, so the platform observes them rather
+              than owning them.'
+            properties:
+              conditions:
+                items:
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource. --- This struct is intended for direct
+                    use as an array at the field path .status.conditions.  For example,
+                    \n \ttype FooStatus struct{ \t    // Represents the observations
+                    of a foo's current state. \t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\" \t    //
+                    +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map
+                    \t    // +listMapKey=type \t    Conditions []metav1.Condition
+                    `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\"
+                    protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields
+                    \t}"
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another. This should be when
+                        the underlying condition changed.  If that is not known, then
+                        using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition. This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon. For instance, if .metadata.generation
+                        is currently 12, but the .status.conditions[x].observedGeneration
+                        is 9, the condition is out of date with respect to the current
+                        state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition. Producers
+                        of specific condition types may define expected values and
+                        meanings for this field, and whether the values are considered
+                        a guaranteed API. The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                        --- Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              environment:
+                description: Environment is derived from the namespace, then the project,
+                  then the cluster, and defaults to prod.
+                enum:
+                - prod
+                - staging
+                - dev
+                type: string
+              groupUID:
+                description: GroupUID is the value every member carries under kubecube.io/resource-group.
+                  It is the scope key.
+                type: string
+              members:
+                description: MemberSummary counts what the group currently holds.
+                  Declared members are the ones a human labelled; derived members
+                  are reached through the ownerReference chain of a declared member.
+                properties:
+                  declared:
+                    type: integer
+                  derived:
+                    type: integer
+                  unlabelledWarnings:
+                    description: UnlabelledWarnings counts members that lost the group
+                      label. Losing it takes an object out of scope, so the platform
+                      reports it and never re-labels it on its own.
+                    type: integer
+                type: object
+              observedGeneration:
+                format: int64
+                type: integer
+              phase:
+                description: GroupPhase is the observed phase of a group.
+                enum:
+                - Pending
+                - Ready
+                - Degraded
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
