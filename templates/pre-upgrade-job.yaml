@@ -1,0 +1,158 @@
+# The webhook configurations are not upgraded by Helm.
+#
+# Helm installs `crds/` and applies the pre-install hook once, and then leaves
+# both alone: a webhook written into the release on the first install is never
+# rewritten, so a new validating webhook shipped in a later chart version would
+# never be registered. This hook is what carries the webhook configurations
+# across an upgrade - it applies the rendered documents, not a `helm upgrade`.
+#
+# It does not mint a CA. The CA that signs the platform's serving certificate
+# already exists in `cube-tls-secret`; the configuration files the hook applies
+# carry the placeholder the pre-install job used, and the init container replaces
+# it with the base64 of the CA in that Secret. In `custom` mode the bundle is
+# already a real value and the replacement finds nothing to do.
+#
+# The app CRDs are not touched here. The release's schema is frozen (plan M0) and
+# `crds/` is installed once; a cluster that predates the agent CRDs gets them from
+# the pre-install job on its next fresh install. A future schema change needs its
+# own migration, which this hook is deliberately not.
+{{- if eq .Values.global.componentsEnable.kubecube "true" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: upgrade-config
+  namespace: {{ template "kubecube.namespace" . }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": hook-succeeded
+data:
+  warden-webhook-configuration.yaml: |-
+    {{- include "warden.webhook.configuration" . | nindent 4 }}
+  {{- if eq .Values.global.componentsEnable.kubecube "true" }}
+  kubecube-webhook-configuration.yaml: |-
+    {{- include "kubecube.webhook.configuration" . | nindent 4 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubecube-pre-upgrade
+  namespace: {{ template "kubecube.namespace" . }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubecube-pre-upgrade
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+  # The hook exists to write two configurations and nothing else: a webhook
+  # configuration is a cluster-wide object, and this is the whole of the surface
+  # the upgrade needs to touch.
+  - apiGroups: [admissionregistration.k8s.io]
+    resources: [validatingwebhookconfigurations]
+    verbs: [get, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubecube-pre-upgrade
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubecube-pre-upgrade
+subjects:
+  - kind: ServiceAccount
+    name: kubecube-pre-upgrade
+    namespace: {{ template "kubecube.namespace" . }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubecube-pre-upgrade
+  namespace: {{ template "kubecube.namespace" . }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 2
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: kubecube
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    spec:
+      serviceAccountName: kubecube-pre-upgrade
+      restartPolicy: Never
+      initContainers:
+        - name: fill-the-bundle
+          image: "{{ .Values.global.hub.registry }}/{{ .Values.global.hub.project }}/{{ .Values.global.images.kubectl }}"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -ex
+              mkdir -p /opt/configs
+              cp -r -L /opt/mount/* /opt/configs/
+              {{- if eq .Values.global.certs.mode "auto" }}
+              # The CA is already in the cluster; base64 of it is what the
+              # configuration's caBundle carries.
+              ca=$(base64 /opt/tls/ca.crt | tr -d '\r\n')
+              for f in /opt/configs/*.yaml; do
+                sed -i'' -e "s/{{ print "{{ ca_crt }}" }}/${ca}/g" "$f"
+              done
+              {{- end }}
+          volumeMounts:
+            - name: mount
+              mountPath: /opt/mount
+            - name: configs
+              mountPath: /opt/configs
+            {{- if eq .Values.global.certs.mode "auto" }}
+            - name: tls
+              mountPath: /opt/tls
+              readOnly: true
+            {{- end }}
+      containers:
+        - name: pre-upgrade
+          image: "{{ .Values.global.hub.registry }}/{{ .Values.global.hub.project }}/{{ .Values.global.images.kubectl }}"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -ex
+              kubectl apply --server-side --force-conflicts -f /opt/configs/
+          volumeMounts:
+            - name: configs
+              mountPath: /opt/configs
+      volumes:
+        - name: configs
+          emptyDir: {}
+        - name: mount
+          configMap:
+            name: upgrade-config
+        {{- if eq .Values.global.certs.mode "auto" }}
+        - name: tls
+          secret:
+            secretName: cube-tls-secret
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- end }}
+{{- end }}

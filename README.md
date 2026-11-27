@@ -223,3 +223,56 @@ kubectl delete clusterRole/kubecube-pre-job
 kubectl delete clusterRoleBinding/kubecube-pre-job
 kubectl delete ns kubecube-system kubecube-monitoring
 ```
+
+## Upgrading
+
+`helm upgrade` does not update the validating webhook configurations. Helm
+installs `crds/` and runs the `pre-install` hook once, and neither is re-applied
+later, so a webhook shipped by a new chart version would otherwise never be
+registered. The chart ships a `pre-upgrade` hook that applies them:
+
+- The hook renders the two configurations into a ConfigMap and applies them with
+  `kubectl apply --server-side --force-conflicts`, from a Job that runs before
+  the release is upgraded.
+- In `global.certs.mode=auto` the init container reads the CA back out of
+  `cube-tls-secret` and fills the bundle; the CA is not re-minted on upgrade,
+  because re-minting would invalidate the serving certificate the running pods
+  already present.
+- In `global.certs.mode=custom` the bundle is already a real value, so the hook
+  only re-applies the documents. If your CA changes at the same time, update
+  `global.certs.custom.caCrt` and run the upgrade; the hook writes the new bundle.
+
+The app CRDs are not migrated by this hook. The schema is frozen for this
+release, and `crds/` is installed on the first install only; a cluster that
+predates the agent CRDs gets them on a fresh install.
+
+Member clusters run their own `warden` release. Its webhook configuration is
+updated by that release's own `pre-upgrade` hook, so a pivot upgrade does not
+reach it: upgrade every member's `warden` release after the pivot.
+
+## Enabling the MCP endpoint
+
+The MCP component is off by default (`global.componentsEnable.mcp: "false"`). It
+is a separate Deployment in front of the same platform, and it is reached through
+the console's nginx at `/mcp`.
+
+```console
+helm upgrade kubecube . -n kubecube-system \
+  --set-string global.componentsEnable.mcp=true
+```
+
+Before turning it on:
+
+- The console must be served over TLS. `global.componentsEnable.mcp=true` adds an
+  `/mcp` route to the frontend's nginx, and the MCP endpoint refuses to start
+  without the CA that verifies the platform's certificate
+  (`-platform-ca=/etc/tls/ca.crt`, mounted from `cube-tls-secret`).
+- `kubecube-mcp-token` is created when `kubecube` is enabled, with or without the
+  MCP component, because the cube Deployment references it. Rotating it means
+  deleting the Secret; the next `helm upgrade` renders a new value, and every
+  issued session token stops verifying, so sessions have to be re-issued.
+
+Turning it off again leaves the Secret and the RBAC in place; the Deployment,
+Service and NetworkPolicy are removed, and the nginx route disappears with the
+switch.
+
